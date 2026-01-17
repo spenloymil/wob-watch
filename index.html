@@ -4,11 +4,9 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>WOB WATCH+</title>
-<link rel="icon" href="data:;base64,iVBORw0KGgo=">
 <style>
 :root{
-  --accent:#004d29; --bg-1:#041411; --bg-2:#06261a; --card:#062a1e; --muted:#9ec7b0;
-  --radius:12px; --glass: rgba(255,255,255,0.03);
+  --accent:#004d29; --bg-1:#041411; --card:#062a1e; --muted:#9ec7b0; --radius:12px;
   --maxw:1100px;
 }
 *{box-sizing:border-box}
@@ -29,9 +27,7 @@ body{
   background:linear-gradient(90deg, rgba(0,77,41,0.06), transparent);
   position:sticky;top:0;z-index:40;
 }
-#logo{
-  width:56px;height:56px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;overflow:hidden;
-}
+#logo{width:56px;height:56px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;overflow:hidden}
 #logo img{width:100%;height:100%;object-fit:cover;display:block}
 .brand{display:flex;flex-direction:column}
 .brand .title{color:var(--accent);font-weight:800}
@@ -39,9 +35,7 @@ body{
 
 /* header actions */
 .header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
-.btn{
-  background:var(--accent);border:0;color:white;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,77,41,0.12)
-}
+.btn{background:var(--accent);border:0;color:white;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,77,41,0.12)}
 .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);box-shadow:none}
 .btn.small{padding:6px 8px;font-size:13px;border-radius:8px}
 
@@ -53,11 +47,7 @@ main{max-width:var(--maxw);margin:28px auto;padding:0 18px 90px}
 
 /* grid */
 .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-.card{
-  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-  border-radius:var(--radius);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.6);
-  cursor:pointer;transition:transform .16s,box-shadow .16s;
-}
+.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:var(--radius);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.6);cursor:pointer;transition:transform .16s,box-shadow .16s}
 .card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.85)}
 .cover{height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#083925,#06231b);color:var(--muted);font-weight:800}
 .card-body{padding:12px 14px}
@@ -74,11 +64,9 @@ main{max-width:var(--maxw);margin:28px auto;padding:0 18px 90px}
 .field{display:flex;flex-direction:column;gap:8px}
 input[type="text"],textarea{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
 textarea{min-height:100px;resize:vertical}
-.player video, .player iframe{width:100%;height:auto;border-radius:10px;background:black;display:block}
-
+.player video,.player iframe{width:100%;height:auto;border-radius:10px;background:black;display:block}
 .muted{color:var(--muted);font-size:13px}
 @media (max-width:920px){.cols{grid-template-columns:1fr}.cover{height:120px}.modal{max-width:95%}}
-/* small, neat footer */
 .footer{max-width:var(--maxw);margin:18px auto 60px;padding:0 18px;color:var(--muted);font-size:13px;text-align:center}
 </style>
 </head>
@@ -148,12 +136,11 @@ textarea{min-height:100px;resize:vertical}
     <div class="cols">
       <div>
         <ol>
-          <li>Upload your video to a public place (recommended: YouTube as *Unlisted* for big files).</li>
-          <li>Open <code>content.json</code> in your GitHub repo and click ✏️ (Edit file).</li>
-          <li>Find the season you want and paste a new episode object (example on the right).</li>
-          <li>Commit changes. Refresh the site after ~30–60s.</li>
+          <li>Upload video to a public host (YouTube Unlisted is easiest for big files).</li>
+          <li>Edit <code>content.json</code> in your GitHub repository and paste the episode JSON inside the correct season.</li>
+          <li>Commit the change and refresh the site after ~30–60s.</li>
         </ol>
-        <p class="muted">For small MP4s (<100MB) you may store them in the repo at <code>/videos/</code> and reference the URL.</p>
+        <p class="muted">If you want, I can paste a one-line episode JSON for you to copy into the file.</p>
       </div>
       <div>
         <strong>Episode JSON (paste inside a season's <code>episodes</code> array):</strong>
@@ -163,7 +150,7 @@ textarea{min-height:100px;resize:vertical}
   "id":"ep_my_first",
   "title":"Episode 1 — Pilot",
   "desc":"Short description",
-  "videoUrl":"https://youtu.be/ABCDEFG" 
+  "videoUrl":"https://youtu.be/ABCDEFG"
 }
         </pre>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
@@ -174,55 +161,60 @@ textarea{min-height:100px;resize:vertical}
   </div>
 </div>
 
-<div class="footer">Made for WOB WATCH+. To publish: put this `index.html` (and `content.json`) in your repo root and enable GitHub Pages. </div>
+<div class="footer">Made for WOB WATCH+. To publish: put this <code>index.html</code> (and <code>content.json</code>) in your repo root and enable GitHub Pages.</div>
 
 <script>
 /* ---------- config ---------- */
-const CONTENT_PATH = '/content.json'; // must exist in repo root
+const CONTENT_PATH = '/content.json';
 let CONTENT = { series: [] };
 
-/* ---------- tiny helpers ---------- */
+/* ---------- helpers ---------- */
+const qs = id => document.getElementById(id);
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function qs(id){ return document.getElementById(id); }
-function show(el){ el.style.display='flex'; el.setAttribute('aria-hidden','false'); }
-function hide(el){ el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+function show(el){ if(!el) return; el.style.display='flex'; el.setAttribute('aria-hidden','false'); }
+function hide(el){ if(!el) return; el.style.display='none'; el.setAttribute('aria-hidden','true'); }
 
-/* ---------- load content.json (with graceful fallback) ---------- */
+/* ---------- load content.json (robust) ---------- */
 async function loadContent(){
   try{
     const res = await fetch(CONTENT_PATH + '?_=' + Date.now());
-    if(!res.ok) throw new Error('not found');
-    CONTENT = await res.json();
+    if(!res.ok) throw new Error('content.json not found');
+    const json = await res.json();
+    // Ensure structure is safe
+    if(!json || !Array.isArray(json.series)) throw new Error('invalid content.json');
+    CONTENT = json;
   }catch(e){
-    // fallback demo content if content.json missing or invalid
+    // Fallback demo content (no media)
     CONTENT = {
       series:[
         {
           id:'s_demo',
           name:'Demo Series',
-          desc:'Edit content.json in your repo to replace this demo.',
+          desc:'No media available. Edit content.json to add series, seasons, and episodes.',
           cover:'',
           seasons:[
             { id:'season1', title:'Season 1', episodes:[
-              { id:'ep1', title:'Sample Ep', desc:'No video attached. Add your URL in content.json.', videoUrl:'' }
+              { id:'ep1', title:'Sample Ep', desc:'Coming soon.', videoUrl:'' }
             ]}
           ]
         }
       ]
     };
-    console.warn('content.json not found or invalid — using demo content.', e);
+    console.warn('Using demo content (content.json missing or invalid).', e);
   }
   render();
 }
 
 /* ---------- render grid ---------- */
 function render(){
-  const grid = qs('grid'); grid.innerHTML='';
+  const grid = qs('grid'); if(!grid) return;
+  grid.innerHTML='';
   const q = (qs('q').value||'').trim().toLowerCase();
   let shown=0;
   (CONTENT.series||[]).forEach(s=>{
+    const seasons = Array.isArray(s.seasons) ? s.seasons : [];
     const match = !q || s.name.toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q) ||
-      (s.seasons||[]).some(se => se.title.toLowerCase().includes(q) || (se.episodes||[]).some(ep => (ep.title||'').toLowerCase().includes(q)));
+      seasons.some(se => se.title.toLowerCase().includes(q) || (Array.isArray(se.episodes) ? se.episodes.some(ep => (ep.title||'').toLowerCase().includes(q)) : false));
     if(!match) return;
     shown++;
     const card=document.createElement('div'); card.className='card';
@@ -233,7 +225,7 @@ function render(){
         <div class="card-title">${escapeHtml(s.name)}</div>
         <div class="card-sub">${escapeHtml(s.desc||'')}</div>
         <div class="meta">
-          <div class="pill">${(s.seasons||[]).length} seasons</div>
+          <div class="pill">${seasons.length} seasons</div>
           <div style="display:flex;gap:8px"><button class="btn small" onclick="openSeries('${s.id}',event)">View</button></div>
         </div>
       </div>
@@ -250,67 +242,73 @@ function openSeries(seriesId, ev){
   const s = (CONTENT.series||[]).find(x=>x.id===seriesId); if(!s) return;
   qs('playerTitle').textContent = s.name;
   qs('playerMeta').textContent = s.desc || '';
-  // build list of seasons / episodes in the player area
-  const player = qs('playerModal');
   const wrap = qs('playerModal').querySelector('.player');
   let html = '';
-  (s.seasons||[]).forEach(se=>{
+  (Array.isArray(s.seasons) ? s.seasons : []).forEach(se=>{
     html += `<div style="margin-bottom:12px"><strong>${escapeHtml(se.title)}</strong><div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">`;
-    (se.episodes||[]).forEach(ep=>{
-      html += `<div style="background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:8px;border-radius:8px"><div style="font-weight:800">${escapeHtml(ep.title)}</div><div class="muted" style="margin-top:6px">${escapeHtml(ep.desc||'')}</div><div style="margin-top:8px"><button class="btn small" onclick="playEpisodeById('${seriesId}','${se.id}','${ep.id}')">Play</button></div></div>`;
+    (Array.isArray(se.episodes) ? se.episodes : []).forEach(ep=>{
+      const hasVideo = !!(ep && (ep.videoUrl || ep.videoData));
+      html += `<div style="background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:8px;border-radius:8px">
+        <div style="font-weight:800">${escapeHtml(ep.title || 'Untitled')}</div>
+        <div class="muted" style="margin-top:6px">${escapeHtml(ep.desc || '')}</div>
+        <div style="margin-top:8px">` + (hasVideo
+          ? `<button class="btn small" onclick="playEpisodeById('${seriesId}','${se.id}','${ep.id}')">Play</button>`
+          : `<button class="btn small ghost" disabled>Coming soon</button>`) + `</div></div>`;
     });
     html += `</div></div>`;
   });
   wrap.innerHTML = html || '<div class="muted">No seasons/episodes yet.</div>';
-  show(player);
+  show(qs('playerModal'));
 }
 
-/* ---------- play logic: supports MP4 URLs and YouTube links ---------- */
+/* ---------- YouTube helper (fixed and defensive) ---------- */
 function youtubeEmbedUrl(url){
   try{
-    let id='';
+    if(!url || typeof url !== 'string') return null;
+    let id = '';
     if(url.includes('youtu.be/')) id = url.split('youtu.be/')[1].split(/[?&]/)[0];
     else if(url.includes('watch?v=')) id = url.split('watch?v=')[1].split(/[?&]/)[0];
-    else if(url.includes('/embed/')) id = url.split('/embed/')[1].split(/[?&]/0)[0];
+    else if(url.includes('/embed/')) id = url.split('/embed/')[1].split(/[?&]/)[0];
+    // strip possible params
     return id ? `https://www.youtube.com/embed/${id}?rel=0&autoplay=1` : null;
-  }catch(e){return null;}
+  }catch(e){ return null; }
 }
 
+/* ---------- play logic ---------- */
 function playEpisodeById(sid,seId,epId){
   const s=(CONTENT.series||[]).find(x=>x.id===sid); if(!s) return;
-  const se=(s.seasons||[]).find(x=>x.id===seId); if(!se) return;
-  const ep=(se.episodes||[]).find(x=>x.id===epId); if(!ep) return;
+  const se=(Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seId); if(!se) return;
+  const ep=(Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===epId); if(!ep) return;
   playEpisodeObj(s,se,ep);
 }
 function playEpisodeObj(s,se,ep){
   const video = qs('playerVideo');
   const iframeWrap = qs('playerIframeWrap');
-  // reset
   video.pause(); video.removeAttribute('src'); video.style.display='none';
   iframeWrap.innerHTML=''; iframeWrap.style.display='none';
+
   const url = ep.videoUrl || ep.videoData || '';
-  if(!url){ alert('No video URL for this episode. Admins: edit content.json to add a videoUrl.'); return; }
-  // YouTube?
+  if(!url){ alert('No video available for this episode.'); return; }
+
   const embed = youtubeEmbedUrl(url);
   if(embed){
     iframeWrap.style.display='block';
-    iframeWrap.innerHTML = `<iframe src="${embed}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:480px;border-radius:10px"></iframe>`;
+    // lightweight responsive iframe
+    iframeWrap.innerHTML = `<div style="position:relative;padding-top:56.25%"><iframe src="${embed}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px"></iframe></div>`;
   } else {
-    // assume direct MP4 or playable source
     video.style.display='block';
     video.src = url;
-    // try autoplay; user interaction rules may block autoplay with sound
     video.play().catch(()=>{});
   }
-  qs('playerTitle').textContent = ep.title;
+  qs('playerTitle').textContent = ep.title || 'Untitled';
   qs('playerMeta').textContent = `${s.name} — ${se.title}`;
   show(qs('playerModal'));
 }
 
 /* ---------- close player ---------- */
 function closePlayer(){
-  const video = qs('playerVideo'); video.pause(); video.removeAttribute('src');
-  const iframeWrap = qs('playerIframeWrap'); iframeWrap.innerHTML=''; iframeWrap.style.display='none';
+  const video = qs('playerVideo'); if(video){ video.pause(); video.removeAttribute('src'); }
+  const iframeWrap = qs('playerIframeWrap'); if(iframeWrap){ iframeWrap.innerHTML=''; iframeWrap.style.display='none'; }
   hide(qs('playerModal'));
 }
 
@@ -318,11 +316,13 @@ function closePlayer(){
 function showHow(){ show(qs('howModal')); }
 function closeHow(){ hide(qs('howModal')); }
 
-/* ---------- logo attempt (repo root /logo.png) ---------- */
+/* ---------- logo (simple, non-error) ---------- */
 function loadLogo(){
-  fetch('/logo.png', {method:'HEAD'}).then(r=>{
-    if(r.ok){ qs('logoImg').src='/logo.png'; qs('logoImg').style.display='block'; qs('logoLetter').style.display='none'; }
-  }).catch(()=>{});
+  const img = qs('logoImg'), letter = qs('logoLetter');
+  if(!img) return;
+  img.src = '/logo.png';
+  img.onload = () => { img.style.display='block'; if(letter) letter.style.display='none'; };
+  img.onerror = () => { img.style.display='none'; if(letter) letter.style.display='block'; };
 }
 
 /* ---------- init ---------- */
