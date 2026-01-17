@@ -37,7 +37,7 @@
   .seasons{display:flex;flex-direction:column;gap:14px;margin-top:8px}
   .season{background:var(--card);padding:12px;border-radius:10px}
   .episodes{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
-  .ep{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:10px;border-radius:8px;min-width:200px;flex:1 1 200px;display:flex;flex-direction:column;gap:8px}
+  .ep{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:10px;border-radius:8px;min-width:200px;flex:1 1 200px;display:flex;flex-direction:column;gap:8px;position:relative}
   .ep h4{margin:0;font-size:15px;font-weight:800;color:#e9fff4}
   .ep p{margin:0;color:var(--muted);font-size:13px}
   .play-row{display:flex;gap:8px;align-items:center;margin-top:8px}
@@ -48,6 +48,10 @@
   .playerBox{flex:1;background:black;border-radius:10px;overflow:hidden;min-height:220px;display:flex;align-items:center;justify-content:center}
   .playerMeta{width:320px;min-width:240px;max-width:320px;color:var(--muted)}
   .footer{max-width:var(--maxw);margin:18px auto 60px;padding:0 18px;color:var(--muted);font-size:13px;text-align:center}
+  .fav { position:absolute; right:10px; top:10px; font-size:18px; cursor:pointer; color: #ffd166; background: rgba(0,0,0,0.12); padding:6px; border-radius:6px; }
+  .watched-badge { position:absolute; left:10px; top:10px; background: #0d6b3f; color: white; padding:4px 8px; border-radius:999px; font-size:12px; }
+  .controls { display:flex; gap:8px; margin-top:8px; align-items:center; }
+  .small-ghost { background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); padding:6px 8px; border-radius:8px; cursor:pointer; }
   @media (max-width:880px){.playerRow{flex-direction:column}.playerMeta{width:100%;max-width:100%}.grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}}
 </style>
 </head>
@@ -85,6 +89,10 @@
         <div id="playerTitle" style="font-weight:800;font-size:16px;color:#e9fff4">Title</div>
         <div id="playerSubtitle" style="margin-top:8px;color:var(--muted)"></div>
         <div style="margin-top:10px;color:var(--muted);font-size:13px">Player supports YouTube and MP4 links.</div>
+        <div class="controls">
+          <button id="nextBtn" class="small-ghost" onclick="playNext()">Next ▶</button>
+          <button id="autoBtn" class="small-ghost" onclick="toggleAutoplay()">Autoplay: Off</button>
+        </div>
       </div>
     </div>
   </div>
@@ -103,16 +111,28 @@
    ========================== */
 const CONTENT = [
   {
-    id: 'bdr',
-    name: 'Bloxburg\'s Drag Race',
-    desc: 'A demo series. Replace content here in the code or use a separate content.json later.',
+    id: 's_demo',
+    name: "Bloxburg's Drag Race",
+    desc: "A demo series. Replace content here in the code or use a separate content.json later.",
     cover: 'BDRS1COVER.png',
     seasons: [
       {
         id: 'season_1',
         title: 'Season 1',
         episodes: [
-          { id:'ep_1', title:'Sample Episode', desc:'Coming soon.', videoUrl:'https://youtu.be/h9SRKnZREqI?si=gU426kUYft0XXKPG' }
+          { id:'s1e1', title:'', desc:'', videoUrl:'' },
+          { id:'s1e2', title:'', desc:'', videoUrl:'' },
+          { id:'s1e3', title:'', desc:'', videoUrl:'' },
+          { id:'s1e4', title:'', desc:'', videoUrl:'' },
+          { id:'s1e5', title:'', desc:'', videoUrl:'' },
+          { id:'s1e6', title:'', desc:'', videoUrl:'' }
+        ]
+      },
+      {
+        id: 'season_2',
+        title: 'Season 2',
+        episodes: [
+          { id:'s2e1', title:'', desc:'', videoUrl:'' }
         ]
       }
     ]
@@ -122,19 +142,30 @@ const CONTENT = [
    End CONTENT ZONE
    ========================== */
 
+/* ---- localStorage keys ---- */
+const FAV_KEY = 'wob_favs_v1';
+const WATCHED_KEY = 'wob_watched_v1';
+const AUTOPLAY_KEY = 'wob_autoplay_v1';
+
 /* helpers */
 const qs = id => document.getElementById(id);
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function loadLogo(){ const img=qs('logoImg'), letter=qs('logoLetter'); img.src='logo.png'; img.onload=()=>{img.style.display='block'; if(letter) letter.style.display='none';}; img.onerror=()=>{img.style.display='none'; if(letter) letter.style.display='block';}; }
 
+/* favorites & watched */
+function loadJSON(key, def){ try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : def; }catch(e){ return def; } }
+function saveJSON(key, obj){ try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){} }
+
+let FAVS = loadJSON(FAV_KEY, {});
+let WATCHED = loadJSON(WATCHED_KEY, {});
+let AUTOPLAY = loadJSON(AUTOPLAY_KEY, false);
+
 /* robust YouTube extractor (handles ?si= and many variants) */
 function toYouTubeEmbed(url){
   if(!url || typeof url !== 'string') return null;
   try{
-    // try regex for common patterns (youtu.be, youtube.com/watch, youtube.com/embed)
     const m = url.match(/(?:youtube\.com\/(?:.*v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
     if(m && m[1]) return 'https://www.youtube.com/embed/' + m[1] + '?rel=0';
-    // fallback: try URL search param "v"
     try{
       const u = new URL(url);
       if(u.searchParams && u.searchParams.get('v')) return 'https://www.youtube.com/embed/' + u.searchParams.get('v') + '?rel=0';
@@ -143,7 +174,9 @@ function toYouTubeEmbed(url){
   }catch(e){ return null; }
 }
 
-/* show player with solid in-page element */
+/* player logic */
+let CURRENT = { seriesId: null, seasonId: null, episodeId: null };
+
 function showPlayerWithUrl(url, title, subtitle){
   const playerArea = qs('playerArea'), playerBox = qs('playerBox');
   playerBox.innerHTML = ''; qs('playerTitle').textContent = title || ''; qs('playerSubtitle').textContent = subtitle || '';
@@ -152,11 +185,14 @@ function showPlayerWithUrl(url, title, subtitle){
   if(yt){
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const iframe = document.createElement('iframe'); iframe.src = yt + '&autoplay=1'; iframe.setAttribute('allow','accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture'); iframe.style.position='absolute'; iframe.style.top='0'; iframe.style.left='0'; iframe.style.width='100%'; iframe.style.height='100%'; iframe.style.border='0'; iframe.style.borderRadius='8px';
+    // If embed blocked, YouTube will show its error inside iframe. We can't inspect cross-origin, so we provide fallback UI via "Open on YouTube" link if needed.
     wrap.appendChild(iframe); playerBox.appendChild(wrap);
   } else {
-    // assume mp4
     const video = document.createElement('video'); video.controls = true; video.src = url; video.style.width='100%'; video.style.height='100%'; video.style.display='block'; video.style.borderRadius='8px';
-    playerBox.appendChild(video); video.play().catch(()=>{});
+    // when video ends and autoplay enabled -> play next
+    video.addEventListener('ended', ()=>{ if(AUTOPLAY) playNext(); });
+    playerBox.appendChild(video);
+    video.play().catch(()=>{});
   }
   playerArea.style.display = 'block';
   if(window.innerWidth < 900) playerArea.scrollIntoView({behavior:'smooth'});
@@ -183,30 +219,117 @@ function renderHome(){
   qs('playerArea').style.display = 'none';
 }
 
-/* render series (no popups) */
+/* render series (no popups) with season selector */
 function openSeries(seriesId){
   const series = (CONTENT||[]).find(x=>x.id===seriesId); if(!series) return;
   const contentArea = qs('contentArea');
+  // build season selector
+  const seasons = Array.isArray(series.seasons) ? series.seasons : [];
+  let seasonOptions = `<select id="seasonSelect" onchange="renderSeriesEpisodes('${seriesId}')">`;
+  seasons.forEach((se, idx) => { seasonOptions += `<option value="${se.id}">${escapeHtml(se.title)}</option>`; });
+  seasonOptions += `</select>`;
   const headerHtml = `<div class="series-header"><div style="width:120px;height:80px;border-radius:10px;overflow:hidden;background:${series.cover? 'url('+series.cover+') center/cover' : 'var(--card)'}"></div>
     <div class="series-info"><div style="display:flex;align-items:center;gap:10px"><button class="back" onclick="goHome()">← Back</button><div style="font-weight:800;font-size:20px">${escapeHtml(series.name)}</div></div>
-    <div style="margin-top:6px;color:var(--muted)">${escapeHtml(series.desc||'')}</div></div></div>`;
-  let seasonsHtml = '<div class="seasons">';
-  (Array.isArray(series.seasons)?series.seasons:[]).forEach(se=>{
-    seasonsHtml += `<div class="season"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${escapeHtml(se.title)}</div><div class="muted">${(Array.isArray(se.episodes)?se.episodes.length:0)} eps</div></div><div class="episodes">`;
-    (Array.isArray(se.episodes)?se.episodes:[]).forEach(ep=>{
-      const hasVideo = !!(ep && (ep.videoUrl || ep.videoData));
-      seasonsHtml += `<div class="ep"><h4>${escapeHtml(ep.title||'Untitled')}</h4><p>${escapeHtml(ep.desc||'')}</p><div class="play-row">` + (hasVideo ? `<button class="play-btn" onclick="playEpisode('${series.id}','${se.id}','${ep.id}')">Play</button>` : `<button class="disabled" disabled>Coming soon</button>`) + `</div></div>`;
-    });
-    seasonsHtml += `</div></div>`;
-  });
-  seasonsHtml += '</div>';
-  contentArea.innerHTML = headerHtml + seasonsHtml;
+    <div style="margin-top:6px;color:var(--muted)">${escapeHtml(series.desc||'')}</div>
+    <div style="margin-top:10px">${seasonOptions}</div>
+    </div></div>`;
+  contentArea.innerHTML = headerHtml + `<div id="seriesEpisodesArea"></div>`;
+  // default render first season's episodes
+  renderSeriesEpisodes(seriesId);
   qs('playerArea').style.display = 'none';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* go home */
-function goHome(){ qs('contentArea').innerHTML = '<div id="grid" class="grid" aria-live="polite"></div>'; renderHome(); }
+/* render episodes for a selected season (or all) */
+function renderSeriesEpisodes(seriesId){
+  const series = (CONTENT||[]).find(x=>x.id===seriesId); if(!series) return;
+  const sel = qs('seasonSelect'); const seasonId = sel ? sel.value : (series.seasons[0] && series.seasons[0].id);
+  const season = (Array.isArray(series.seasons)?series.seasons:[]).find(s=>s.id===seasonId);
+  const area = qs('seriesEpisodesArea');
+  let seasonsHtml = '<div class="seasons">';
+  if(!season){
+    seasonsHtml += '<div class="muted">No seasons found.</div>';
+  } else {
+    seasonsHtml += `<div class="season"><div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">${escapeHtml(season.title)}</div><div class="muted">${(Array.isArray(season.episodes)?season.episodes.length:0)} eps</div></div><div class="episodes">`;
+    (Array.isArray(season.episodes)?season.episodes:[]).forEach(ep=>{
+      const hasVideo = !!(ep && (ep.videoUrl || ep.videoData));
+      const favClass = FAVS[ep.id] ? '★' : '☆';
+      const watched = WATCHED[ep.id];
+      seasonsHtml += `<div class="ep" id="ep-${ep.id}">
+          ${ watched ? '<div class="watched-badge">✓ watched</div>' : ''}
+          <div class="fav" onclick="toggleFav('${ep.id}', event)">${favClass}</div>
+          <h4>${escapeHtml(ep.title || '') || 'Untitled'}</h4>
+          <p>${escapeHtml(ep.desc || '')}</p>
+          <div class="play-row">` + (hasVideo ? `<button class="play-btn" onclick="playEpisode('${series.id}','${season.id}','${ep.id}')">Play</button>` : `<button class="disabled" disabled>Coming soon</button>`) + `</div>
+        </div>`;
+    });
+    seasonsHtml += `</div></div>`;
+  }
+  seasonsHtml += '</div>';
+  area.innerHTML = seasonsHtml;
+}
+
+/* toggle favorite */
+function toggleFav(epId, ev){
+  if(ev) ev.stopPropagation();
+  FAVS[epId] = !FAVS[epId];
+  if(!FAVS[epId]) delete FAVS[epId];
+  saveJSON(FAV_KEY, FAVS);
+  // re-render current season to update star
+  const selSeries = CURRENT.seriesId || (CONTENT[0] && CONTENT[0].id);
+  if(selSeries) renderSeriesEpisodes(selSeries);
+}
+
+/* mark watched */
+function markWatched(epId){
+  WATCHED[epId] = Date.now();
+  saveJSON(WATCHED_KEY, WATCHED);
+  const epEl = qs('ep-' + epId);
+  if(epEl && !epEl.querySelector('.watched-badge')){
+    const badge = document.createElement('div'); badge.className='watched-badge'; badge.textContent='✓ watched';
+    epEl.appendChild(badge);
+  }
+}
+
+/* find next episode across season -> season */
+function findNext(seriesId, seasonId, episodeId){
+  const s = (CONTENT||[]).find(x=>x.id===seriesId); if(!s) return null;
+  const seasons = Array.isArray(s.seasons) ? s.seasons : [];
+  const si = seasons.findIndex(x=>x.id===seasonId);
+  if(si === -1) return null;
+  const se = seasons[si];
+  const ei = (Array.isArray(se.episodes)?se.episodes:[]).findIndex(x=>x.id===episodeId);
+  if(ei === -1) return null;
+  // next in same season
+  if(ei + 1 < se.episodes.length) return { seriesId, seasonId, episodeId: se.episodes[ei+1].id };
+  // else find next season first ep
+  for(let j = si+1; j < seasons.length; j++){
+    const nextSeason = seasons[j];
+    if(Array.isArray(nextSeason.episodes) && nextSeason.episodes.length > 0){
+      return { seriesId, seasonId: nextSeason.id, episodeId: nextSeason.episodes[0].id };
+    }
+  }
+  return null;
+}
+
+/* play next (called by button or autoplay) */
+function playNext(){
+  const cur = CURRENT;
+  if(!cur.seriesId) return;
+  const next = findNext(cur.seriesId, cur.seasonId, cur.episodeId);
+  if(next){
+    playEpisode(next.seriesId, next.seasonId, next.episodeId);
+  } else {
+    alert('No next episode.');
+  }
+}
+
+/* toggle autoplay */
+function toggleAutoplay(){
+  AUTOPLAY = !AUTOPLAY;
+  saveJSON(AUTOPLAY_KEY, AUTOPLAY);
+  qs('autoBtn').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off');
+}
 
 /* play */
 function playEpisode(seriesId, seasonId, episodeId){
@@ -214,15 +337,31 @@ function playEpisode(seriesId, seasonId, episodeId){
   const se=(Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seasonId); if(!se) return;
   const ep=(Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===episodeId); if(!ep) return;
   const url = ep.videoUrl || ep.videoData || ''; if(!url){ alert('No video available'); return; }
+  CURRENT = { seriesId, seasonId, episodeId };
+  // show player
   showPlayerWithUrl(url, ep.title || 'Untitled', s.name + ' — ' + se.title);
+  // mark watched
+  markWatched(ep.id);
+  // update autoplay button text
+  qs('autoBtn').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off');
+  // ensure nextBtn visible (it always is)
 }
+
+/* go home */
+function goHome(){ qs('contentArea').innerHTML = '<div id="grid" class="grid" aria-live="polite"></div>'; renderHome(); }
 
 /* init */
 (function init(){
   loadLogo();
   renderHome();
+  // expose functions needed inline
   window.openSeries = openSeries;
   window.playEpisode = playEpisode;
+  window.playNext = playNext;
+  window.toggleFav = toggleFav;
+  window.toggleAutoplay = toggleAutoplay;
+  // set autoplay button initial label
+  if(typeof AUTOPLAY === 'boolean') qs('autoBtn').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off');
 })();
 </script>
 
