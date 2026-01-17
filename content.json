@@ -1,21 +1,20 @@
 {
   "series": [
     {
-      "id": "bdr",
-      "name": "Bloxburg's Drag Race",
-      "desc": "A short demo series.",
+      "id": "s_demo",
+      "name": "Demo Series",
+      "desc": "A short demo. Edit content.json to add your series/seasons/episodes.",
       "cover": "",
-
       "seasons": [
         {
           "id": "season_1",
           "title": "Season 1",
           "episodes": [
             {
-              "id": "s1_ep_1",
-              "title": "Episode 1 - Who Is She?",
-              "desc": "Coming Soon",
-              "videoUrl": "https://youtu.be/h9SRKnZREqI?si=TF1VgluOGByHQ2ss"
+              "id": "ep_demo_1",
+              "title": "Sample Episode",
+              "desc": "Replace this with your episode.",
+              "videoUrl": ""
             }
           ]
         }
