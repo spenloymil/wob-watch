@@ -1,8 +1,8 @@
 {
   "series": [
     {
-      "id": "s_demo",
-      "name": "Demo Series",
+      "id": "bdr",
+      "name": "Bloxburg's Drag Race",
       "desc": "A short demo series.",
       "cover": "",
 
@@ -12,10 +12,10 @@
           "title": "Season 1",
           "episodes": [
             {
-              "id": "ep_demo_1",
-              "title": "Sample Episode",
-              "desc": "No video attached — replace with your file URL.",
-              "videoUrl": "https://example.com/path/to/video.mp4"
+              "id": "s1_ep_1",
+              "title": "Episode 1 - Who Is She?",
+              "desc": "Coming Soon",
+              "videoUrl": "https://youtu.be/h9SRKnZREqI?si=TF1VgluOGByHQ2ss"
             }
           ]
         }
