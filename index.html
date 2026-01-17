@@ -1,0 +1,611 @@
+import React, { useEffect, useState } from "react";
+
+// Streaming Service - Single-file React app
+// - Uses Tailwind CSS classes for styling
+// - Stores data in localStorage under 'stream_data_v1' (series, seasons, episodes)
+// - Supports adding series, seasons, episodes (including uploading cover images and episode videos as data URLs)
+// NOTE: Storing large videos/images in localStorage may exceed browser limits. For demo/prototyping only.
+
+function uid(prefix = "id") {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+async function fileToDataUrl(file) {
+  return await new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = () => res(reader.result);
+    reader.onerror = (e) => rej(e);
+    reader.readAsDataURL(file);
+  });
+}
+
+const STORAGE_KEY = "stream_data_v1";
+
+export default function StreamingApp() {
+  const [data, setData] = useState({ series: [] });
+  const [view, setView] = useState({ mode: "browse", seriesId: null, seasonId: null });
+
+  // UI states for modals/forms
+  const [showAddSeries, setShowAddSeries] = useState(false);
+  const [newSeries, setNewSeries] = useState({ title: "", description: "", coverFile: null });
+
+  const [showAddSeason, setShowAddSeason] = useState(false);
+  const [newSeason, setNewSeason] = useState({ title: "" });
+
+  const [showAddEpisode, setShowAddEpisode] = useState(false);
+  const [newEpisode, setNewEpisode] = useState({ title: "", description: "", videoFile: null, videoUrl: "" });
+
+  const [playing, setPlaying] = useState(null); // {seriesId, seasonId, episode}
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        setData(JSON.parse(raw));
+      } catch (e) {
+        console.warn("Failed to parse stored data", e);
+        setData({ series: [] });
+      }
+    } else {
+      // seed with demo series
+      const demo = {
+        series: [
+          {
+            id: uid("s"),
+            title: "Demo Series",
+            description: "A short demo series to get you started.",
+            coverDataUrl: null,
+            seasons: [
+              {
+                id: uid("season"),
+                title: "Season 1",
+                episodes: [
+                  {
+                    id: uid("ep"),
+                    title: "Episode 1 — Sample",
+                    description: "This is a sample episode. Upload your own videos to replace it.",
+                    // small sample remote video url could be used but for privacy we leave blank here
+                    videoDataUrl: "",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      setData(demo);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn("Failed to save to localStorage (size limit?)", e);
+    }
+  }, [data]);
+
+  // --- CRUD helpers ---
+  function addSeriesObject(seriesObj) {
+    setData((d) => ({ ...d, series: [seriesObj, ...d.series] }));
+  }
+
+  async function handleCreateSeries(e) {
+    e.preventDefault();
+    const id = uid("series");
+    let coverDataUrl = null;
+    if (newSeries.coverFile) {
+      coverDataUrl = await fileToDataUrl(newSeries.coverFile);
+    }
+    const seriesObj = {
+      id,
+      title: newSeries.title || "Untitled Series",
+      description: newSeries.description || "",
+      coverDataUrl,
+      seasons: [],
+    };
+    addSeriesObject(seriesObj);
+    setNewSeries({ title: "", description: "", coverFile: null });
+    setShowAddSeries(false);
+    setView({ mode: "manage", seriesId: id, seasonId: null });
+  }
+
+  function addSeasonToSeries(seriesId, seasonObj) {
+    setData((d) => ({
+      ...d,
+      series: d.series.map((s) => (s.id === seriesId ? { ...s, seasons: [seasonObj, ...s.seasons] } : s)),
+    }));
+  }
+
+  async function handleCreateSeason(e) {
+    e.preventDefault();
+    const sid = uid("season");
+    const seasonObj = { id: sid, title: newSeason.title || `Season ${sid}`, episodes: [] };
+    addSeasonToSeries(view.seriesId, seasonObj);
+    setNewSeason({ title: "" });
+    setShowAddSeason(false);
+    setView((v) => ({ ...v, seasonId: sid }));
+  }
+
+  function addEpisodeToSeason(seriesId, seasonId, episodeObj) {
+    setData((d) => ({
+      ...d,
+      series: d.series.map((s) =>
+        s.id === seriesId
+          ? {
+              ...s,
+              seasons: s.seasons.map((se) => (se.id === seasonId ? { ...se, episodes: [episodeObj, ...se.episodes] } : se)),
+            }
+          : s
+      ),
+    }));
+  }
+
+  async function handleCreateEpisode(e) {
+    e.preventDefault();
+    const eid = uid("ep");
+    let videoDataUrl = newEpisode.videoUrl || "";
+    if (newEpisode.videoFile) {
+      // convert to data url (may be large!)
+      videoDataUrl = await fileToDataUrl(newEpisode.videoFile);
+    }
+    const episodeObj = {
+      id: eid,
+      title: newEpisode.title || `Episode ${eid}`,
+      description: newEpisode.description || "",
+      videoDataUrl,
+    };
+    addEpisodeToSeason(view.seriesId, view.seasonId, episodeObj);
+    setNewEpisode({ title: "", description: "", videoFile: null, videoUrl: "" });
+    setShowAddEpisode(false);
+    // automatically play the new episode
+    setPlaying({ seriesId: view.seriesId, seasonId: view.seasonId, episode: episodeObj });
+  }
+
+  function findSeries(seriesId) {
+    return data.series.find((s) => s.id === seriesId);
+  }
+
+  function findSeason(seriesId, seasonId) {
+    const s = findSeries(seriesId);
+    return s?.seasons?.find((se) => se.id === seasonId);
+  }
+
+  // Delete helpers
+  function deleteSeries(seriesId) {
+    if (!confirm("Delete this series? This cannot be undone.")) return;
+    setData((d) => ({ ...d, series: d.series.filter((s) => s.id !== seriesId) }));
+    setView({ mode: "browse", seriesId: null, seasonId: null });
+  }
+
+  function deleteSeason(seriesId, seasonId) {
+    if (!confirm("Delete this season? This cannot be undone.")) return;
+    setData((d) => ({
+      ...d,
+      series: d.series.map((s) => (s.id === seriesId ? { ...s, seasons: s.seasons.filter((se) => se.id !== seasonId) } : s)),
+    }));
+    setView((v) => ({ ...v, seasonId: null }));
+  }
+
+  function deleteEpisode(seriesId, seasonId, episodeId) {
+    if (!confirm("Delete this episode? This cannot be undone.")) return;
+    setData((d) => ({
+      ...d,
+      series: d.series.map((s) =>
+        s.id === seriesId
+          ? {
+              ...s,
+              seasons: s.seasons.map((se) => (se.id === seasonId ? { ...se, episodes: se.episodes.filter((ep) => ep.id !== episodeId) } : se)),
+            }
+          : s
+      ),
+    }));
+  }
+
+  // --- UI components ---
+  function Header() {
+    return (
+      <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
+        <div className="flex items-center gap-4">
+          <div className="text-2xl font-bold">Streamly</div>
+          <nav className="hidden md:flex gap-4 text-sm opacity-90">
+            <button onClick={() => setView({ mode: "browse", seriesId: null, seasonId: null })}>Browse</button>
+            <button onClick={() => setView({ mode: "manage", seriesId: null, seasonId: null })}>Manage</button>
+          </nav>
+        </div>
+        <div className="flex gap-3 items-center">
+          <button
+            className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-sm"
+            onClick={() => setShowAddSeries(true)}
+          >
+            + Add Series
+          </button>
+          <div className="text-xs opacity-80 px-3 py-1">Local demo • saved in browser</div>
+        </div>
+      </header>
+    );
+  }
+
+  function SeriesGrid() {
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl mb-4">All Series</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {data.series.map((s) => (
+            <div key={s.id} className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg">
+              <div
+                className="h-40 bg-center bg-cover"
+                style={{ backgroundImage: s.coverDataUrl ? `url(${s.coverDataUrl})` : undefined }}
+              >
+                {!s.coverDataUrl && <div className="h-40 flex items-center justify-center text-slate-400">No cover</div>}
+              </div>
+              <div className="p-4">
+                <div className="font-semibold text-lg">{s.title}</div>
+                <div className="text-xs opacity-80 mt-1">{s.description}</div>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    className="px-3 py-1 rounded bg-indigo-600 text-sm"
+                    onClick={() => setView({ mode: "series", seriesId: s.id, seasonId: null })}
+                  >
+                    View
+                  </button>
+                  <button
+                    className="px-3 py-1 rounded bg-white/5 text-sm"
+                    onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: null })}
+                  >
+                    Manage
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  function SeriesView({ seriesId }) {
+    const s = findSeries(seriesId);
+    if (!s) return <div className="p-6">Series not found.</div>;
+    return (
+      <div className="p-6">
+        <div className="flex gap-6">
+          <div className="w-48 h-32 bg-cover bg-center rounded-lg" style={{ backgroundImage: s.coverDataUrl ? `url(${s.coverDataUrl})` : undefined }}>
+            {!s.coverDataUrl && <div className="w-48 h-32 flex items-center justify-center text-slate-400">No cover</div>}
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold">{s.title}</h2>
+            <p className="mt-2 text-sm opacity-80">{s.description}</p>
+            <div className="mt-4 flex gap-2">
+              <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => { setShowAddSeason(true); setView((v) => ({ ...v, seriesId })); }}>
+                + Add Season
+              </button>
+              <button className="px-3 py-1 rounded bg-white/5" onClick={() => setView({ mode: "manage", seriesId, seasonId: null })}>
+                Manage Series
+              </button>
+              <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteSeries(seriesId)}>
+                Delete Series
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="text-xl mb-3">Seasons</h3>
+          {s.seasons.length === 0 && <div className="text-sm opacity-80">No seasons yet.</div>}
+          <div className="space-y-4">
+            {s.seasons.map((se) => (
+              <div key={se.id} className="bg-slate-900 rounded p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="font-semibold">{se.title}</div>
+                    <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-2 py-1 rounded bg-indigo-600 text-sm"
+                      onClick={() => setView({ mode: "season", seriesId, seasonId: se.id })}
+                    >
+                      View
+                    </button>
+                    <button className="px-2 py-1 rounded bg-red-700 text-sm" onClick={() => deleteSeason(seriesId, se.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {se.episodes.map((ep) => (
+                    <div key={ep.id} className="p-3 bg-slate-800 rounded">
+                      <div className="font-medium">{ep.title}</div>
+                      <div className="text-xs opacity-80 mt-1">{ep.description}</div>
+                      <div className="mt-3 flex gap-2">
+                        <button className="px-2 py-1 rounded bg-green-600 text-sm" onClick={() => setPlaying({ seriesId, seasonId: se.id, episode: ep })}>
+                          Play
+                        </button>
+                        <button className="px-2 py-1 rounded bg-red-700 text-sm" onClick={() => deleteEpisode(seriesId, se.id, ep.id)}>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function ManageView({ seriesId }) {
+    if (!seriesId) {
+      return (
+        <div className="p-6">
+          <h2 className="text-2xl mb-4">Manage</h2>
+          <p className="mb-4">Select a series to manage or create a new one.</p>
+          <div className="space-y-4">
+            {data.series.map((s) => (
+              <div key={s.id} className="p-4 bg-slate-900 rounded flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{s.title}</div>
+                  <div className="text-xs opacity-80">{s.seasons.length} seasons</div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: null })}>
+                    Manage
+                  </button>
+                  <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteSeries(s.id)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    const s = findSeries(seriesId);
+    if (!s) return <div className="p-6">Series not found.</div>;
+
+    return (
+      <div className="p-6">
+        <h2 className="text-2xl mb-2">Manage: {s.title}</h2>
+        <div className="mb-4 text-sm opacity-80">Description: {s.description}</div>
+
+        <div className="mb-6">
+          <h3 className="font-semibold mb-2">Seasons</h3>
+          <div className="space-y-3">
+            {s.seasons.map((se) => (
+              <div key={se.id} className="p-3 bg-slate-900 rounded flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{se.title}</div>
+                  <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-2 py-1 rounded bg-indigo-600" onClick={() => setView({ mode: "season", seriesId: s.id, seasonId: se.id })}>
+                    Edit
+                  </button>
+                  <button className="px-2 py-1 rounded bg-red-700" onClick={() => deleteSeason(s.id, se.id)}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-semibold mb-2">Add Season</h3>
+          <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setShowAddSeason(true)}>
+            + New Season
+          </button>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="font-semibold mb-2">Quick Add Episode</h3>
+          <p className="text-xs opacity-80 mb-2">Select a season below and use the episode form.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {s.seasons.map((se) => (
+              <div key={se.id} className="p-3 bg-slate-800 rounded">
+                <div className="flex justify-between">
+                  <div>
+                    <div className="font-medium">{se.title}</div>
+                    <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
+                  </div>
+                  <div>
+                    <button
+                      className="px-3 py-1 rounded bg-green-600"
+                      onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: se.id }) || setShowAddEpisode(true)}
+                    >
+                      + Add Episode
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function SeasonView({ seriesId, seasonId }) {
+    const se = findSeason(seriesId, seasonId);
+    if (!se) return <div className="p-6">Season not found.</div>;
+
+    return (
+      <div className="p-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold">{se.title}</h2>
+            <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
+          </div>
+          <div className="flex gap-2">
+            <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setShowAddEpisode(true)}>
+              + Add Episode
+            </button>
+            <button className="px-3 py-1 rounded bg-white/5" onClick={() => setView({ mode: "manage", seriesId, seasonId })}>
+              Manage
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {se.episodes.map((ep) => (
+            <div key={ep.id} className="bg-slate-900 rounded p-4">
+              <div className="font-medium">{ep.title}</div>
+              <div className="text-xs opacity-80 mt-1">{ep.description}</div>
+              <div className="mt-3 flex gap-2">
+                <button className="px-3 py-1 rounded bg-green-600" onClick={() => setPlaying({ seriesId, seasonId, episode: ep })}>
+                  Play
+                </button>
+                <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteEpisode(seriesId, seasonId, ep.id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main render ---
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-850 to-slate-900 text-white">
+      <Header />
+      <main className="md:flex">
+        <aside className="md:w-64 p-4 border-r border-slate-800 hidden md:block">
+          <div className="mb-6">
+            <div className="font-semibold mb-2">Library</div>
+            <div className="space-y-2 text-sm">
+              <button className="block w-full text-left" onClick={() => setView({ mode: "browse", seriesId: null, seasonId: null })}>Browse</button>
+              <button className="block w-full text-left" onClick={() => setView({ mode: "manage", seriesId: null, seasonId: null })}>Manage</button>
+            </div>
+          </div>
+
+          <div>
+            <div className="font-semibold mb-2">Your Series</div>
+            <div className="space-y-2 text-sm">
+              {data.series.map((s) => (
+                <button key={s.id} className={`block w-full text-left truncate ${view.seriesId === s.id ? "font-bold" : ""}`} onClick={() => setView({ mode: "series", seriesId: s.id, seasonId: null })}>
+                  {s.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        <section className="flex-1">
+          {view.mode === "browse" && <SeriesGrid />}
+          {view.mode === "series" && view.seriesId && <SeriesView seriesId={view.seriesId} />}
+          {view.mode === "manage" && <ManageView seriesId={view.seriesId} />}
+          {view.mode === "season" && view.seriesId && view.seasonId && <SeasonView seriesId={view.seriesId} seasonId={view.seasonId} />}
+        </section>
+      </main>
+
+      {/* Modals: Add Series */}
+      {showAddSeries && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
+          <form onSubmit={handleCreateSeries} className="bg-slate-800 rounded-lg p-6 w-full max-w-lg">
+            <h3 className="text-xl mb-3">Add Series</h3>
+            <label className="block mb-2 text-sm">Title</label>
+            <input value={newSeries.title} onChange={(e) => setNewSeries((s) => ({ ...s, title: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
+            <label className="block mt-3 mb-2 text-sm">Description</label>
+            <textarea value={newSeries.description} onChange={(e) => setNewSeries((s) => ({ ...s, description: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
+            <label className="block mt-3 mb-2 text-sm">Cover Image (optional)</label>
+            <input type="file" accept="image/*" onChange={(e) => setNewSeries((s) => ({ ...s, coverFile: e.target.files?.[0] || null }))} />
+            <div className="mt-4 flex gap-2 justify-end">
+              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddSeries(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
+                Create Series
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Add Season */}
+      {showAddSeason && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
+          <form onSubmit={handleCreateSeason} className="bg-slate-800 rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-xl mb-3">Add Season to {findSeries(view.seriesId)?.title}</h3>
+            <label className="block mb-2 text-sm">Season Title</label>
+            <input value={newSeason.title} onChange={(e) => setNewSeason({ title: e.target.value })} className="w-full p-2 rounded bg-slate-900" />
+            <div className="mt-4 flex gap-2 justify-end">
+              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddSeason(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
+                Create Season
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Add Episode */}
+      {showAddEpisode && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4 overflow-auto">
+          <form onSubmit={handleCreateEpisode} className="bg-slate-800 rounded-lg p-6 w-full max-w-2xl">
+            <h3 className="text-xl mb-3">Add Episode</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block mb-2 text-sm">Title</label>
+                <input value={newEpisode.title} onChange={(e) => setNewEpisode((s) => ({ ...s, title: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
+                <label className="block mt-3 mb-2 text-sm">Description</label>
+                <textarea value={newEpisode.description} onChange={(e) => setNewEpisode((s) => ({ ...s, description: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm">Upload Video File (or paste remote URL below)</label>
+                <input type="file" accept="video/*" onChange={(e) => setNewEpisode((s) => ({ ...s, videoFile: e.target.files?.[0] || null }))} />
+                <label className="block mt-3 mb-2 text-sm">Or Video URL</label>
+                <input value={newEpisode.videoUrl} onChange={(e) => setNewEpisode((s) => ({ ...s, videoUrl: e.target.value }))} className="w-full p-2 rounded bg-slate-900" placeholder="https://.../video.mp4" />
+                <div className="mt-2 text-xs opacity-80">Note: Uploaded files are stored in browser (may be large). For production, use a backend + object storage.</div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex gap-2 justify-end">
+              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddEpisode(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
+                Create Episode
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {playing && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black/90 p-4">
+          <div className="w-full max-w-4xl">
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <div className="font-semibold text-lg">{playing.episode.title}</div>
+                <div className="text-xs opacity-80">{playing.episode.description}</div>
+              </div>
+              <div className="flex gap-2">
+                <button className="px-3 py-1 rounded bg-white/5" onClick={() => setPlaying(null)}>
+                  Close
+                </button>
+              </div>
+            </div>
+            {playing.episode.videoDataUrl ? (
+              <video controls className="w-full rounded bg-black">
+                <source src={playing.episode.videoDataUrl} />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <div className="p-12 bg-slate-900 rounded text-center">No video attached. Add an episode video or provide a remote URL.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
