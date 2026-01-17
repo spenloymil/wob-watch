@@ -1,337 +1,163 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>WOB WATCH+</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
-:root{
-  --accent:#004d29; --bg-1:#041411; --card:#062a1e; --muted:#9ec7b0; --radius:12px;
-  --maxw:1100px;
-}
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0;
-  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
-  background:linear-gradient(180deg,var(--bg-1),#07130f 60%);
-  color:#e9fef0;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
-  line-height:1.35;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #041a12;
+    color: white;
 }
 
-/* header */
-.header{
-  display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.03);
-  background:linear-gradient(90deg, rgba(0,77,41,0.06), transparent);
-  position:sticky;top:0;z-index:40;
+header {
+    background: #004d29;
+    padding: 15px 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
-#logo{width:56px;height:56px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;overflow:hidden}
-#logo img{width:100%;height:100%;object-fit:cover;display:block}
-.brand{display:flex;flex-direction:column}
-.brand .title{color:var(--accent);font-weight:800}
-.brand .sub{color:var(--muted);font-size:13px;margin-top:2px}
 
-/* header actions */
-.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
-.btn{background:var(--accent);border:0;color:white;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,77,41,0.12)}
-.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);box-shadow:none}
-.btn.small{padding:6px 8px;font-size:13px;border-radius:8px}
+header img {
+    height: 45px;
+}
 
-/* main layout */
-main{max-width:var(--maxw);margin:28px auto;padding:0 18px 90px}
-.topbar{display:flex;gap:12px;align-items:center;margin-bottom:18px}
-.search{flex:1;display:flex;gap:10px;align-items:center;background:var(--card);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
-.search input{background:transparent;border:0;outline:0;color:inherit;font-size:15px;width:100%}
+header h1 {
+    font-size: 22px;
+}
 
-/* grid */
-.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:var(--radius);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.6);cursor:pointer;transition:transform .16s,box-shadow .16s}
-.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.85)}
-.cover{height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#083925,#06231b);color:var(--muted);font-weight:800}
-.card-body{padding:12px 14px}
-.card-title{font-weight:800;color:#e9fff4;margin-bottom:6px}
-.card-sub{color:var(--muted);font-size:13px;margin-bottom:10px}
-.meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.pill{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:999px;color:var(--muted);font-weight:700;font-size:13px}
+#container {
+    display: flex;
+}
 
-/* modal */
-.backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:120;padding:18px}
-.modal{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;width:100%;max-width:920px;box-shadow:0 30px 80px rgba(0,0,0,0.8);color:inherit}
-.modal h3{margin:0 0 8px 0;color:var(--accent)}
-.cols{display:grid;grid-template-columns:1fr 360px;gap:12px}
-.field{display:flex;flex-direction:column;gap:8px}
-input[type="text"],textarea{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-textarea{min-height:100px;resize:vertical}
-.player video,.player iframe{width:100%;height:auto;border-radius:10px;background:black;display:block}
-.muted{color:var(--muted);font-size:13px}
-@media (max-width:920px){.cols{grid-template-columns:1fr}.cover{height:120px}.modal{max-width:95%}}
-.footer{max-width:var(--maxw);margin:18px auto 60px;padding:0 18px;color:var(--muted);font-size:13px;text-align:center}
+#sidebar {
+    width: 260px;
+    background: #062d1f;
+    padding: 15px;
+    overflow-y: auto;
+    height: calc(100vh - 75px);
+}
+
+.series-btn, .episode-btn {
+    width: 100%;
+    border: none;
+    padding: 10px;
+    margin-bottom: 8px;
+    background: #0b5c3a;
+    color: white;
+    cursor: pointer;
+    border-radius: 6px;
+    text-align: left;
+}
+
+.series-btn:hover, .episode-btn:hover {
+    background: #0f7a4c;
+}
+
+#main {
+    flex: 1;
+    padding: 20px;
+}
+
+#player {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    border: none;
+    background: black;
+}
+
+#title {
+    margin-top: 12px;
+    font-size: 22px;
+}
+
+#desc {
+    opacity: 0.8;
+    margin-top: 6px;
+}
+
+footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 13px;
+    opacity: 0.6;
+}
 </style>
 </head>
+
 <body>
 
-<header class="header">
-  <div id="logo" title="Replace logo.png in repo root to show your logo">
-    <img id="logoImg" src="" alt="" style="display:none">
-    <span id="logoLetter">W</span>
-  </div>
-
-  <div class="brand">
-    <div class="title">WOB WATCH+</div>
-    <div class="sub">Simple streaming — public</div>
-  </div>
-
-  <div class="header-actions">
-    <div class="muted">Admins edit <code>content.json</code> in the repo</div>
-    <button class="btn small ghost" onclick="showHow()">How to add episodes</button>
-  </div>
+<header>
+    <!-- LOGO -->
+    <img src="logo.png" onerror="this.style.display='none'">
+    <h1>WOB WATCH+</h1>
 </header>
 
-<main>
-  <div class="topbar">
-    <div class="search">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="opacity:.75"><path d="M21 21l-4.35-4.35" stroke="#cfeee0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="#cfeee0" stroke-width="1.6"/></svg>
-      <input id="q" placeholder="Search series, seasons, episodes..." oninput="render()">
-    </div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div class="muted" id="seriesCount"></div>
-    </div>
-  </div>
+<div id="container">
+    <div id="sidebar"></div>
 
-  <section>
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
-      <h2 style="margin:0">Series</h2>
-      <div class="muted">(<span id="count">0</span>)</div>
+    <div id="main">
+        <iframe id="player" allowfullscreen></iframe>
+        <div id="title">Select an episode</div>
+        <div id="desc">Choose a show from the left.</div>
     </div>
-
-    <div id="grid" class="grid" aria-live="polite"></div>
-  </section>
-</main>
-
-<!-- Player / Series modal -->
-<div id="playerModal" class="backdrop" role="dialog" aria-hidden="true">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <h3 id="playerTitle">Playing</h3>
-        <div id="playerMeta" class="muted"></div>
-      </div>
-      <div>
-        <button class="btn ghost small" onclick="closePlayer()">Close</button>
-      </div>
-    </div>
-    <div style="margin-top:12px" class="player">
-      <video id="playerVideo" controls style="display:none"></video>
-      <div id="playerIframeWrap" style="display:none"></div>
-    </div>
-  </div>
 </div>
 
-<!-- How-to modal -->
-<div id="howModal" class="backdrop" role="dialog" aria-hidden="true">
-  <div class="modal">
-    <h3>How to add episodes (super simple)</h3>
-    <div class="cols">
-      <div>
-        <ol>
-          <li>Upload video to a public host (YouTube Unlisted is easiest for big files).</li>
-          <li>Edit <code>content.json</code> in your GitHub repository and paste the episode JSON inside the correct season.</li>
-          <li>Commit the change and refresh the site after ~30–60s.</li>
-        </ol>
-        <p class="muted">If you want, I can paste a one-line episode JSON for you to copy into the file.</p>
-      </div>
-      <div>
-        <strong>Episode JSON (paste inside a season's <code>episodes</code> array):</strong>
-        <pre style="background:#041a14;padding:10px;border-radius:8px;color:#cfeee0;font-size:13px">
-,
-{
-  "id":"ep_my_first",
-  "title":"Episode 1 — Pilot",
-  "desc":"Short description",
-  "videoUrl":"https://youtu.be/ABCDEFG"
-}
-        </pre>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
-          <button class="btn ghost small" onclick="closeHow()">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="footer">Made for WOB WATCH+. To publish: put this <code>index.html</code> (and <code>content.json</code>) in your repo root and enable GitHub Pages.</div>
+<footer>
+    WOB WATCH+ • Free Streaming
+</footer>
 
 <script>
-/* ---------- config ---------- */
-const CONTENT_PATH = '/content.json';
-let CONTENT = { series: [] };
+const data = [
+    {
+        name: "My Series",
+        episodes: [
+            {
+                title: "Episode 1",
+                description: "Pilot episode",
+                youtube: "https://www.youtube.com/watch?v=h9SRKnZREqI&t=419"
+            },
+            {
+                title: "Episode 2",
+                description: "Second episode",
+                youtube: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+            }
+        ]
+    }
+];
 
-/* ---------- helpers ---------- */
-const qs = id => document.getElementById(id);
-function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function show(el){ if(!el) return; el.style.display='flex'; el.setAttribute('aria-hidden','false'); }
-function hide(el){ if(!el) return; el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+const sidebar = document.getElementById("sidebar");
+const player = document.getElementById("player");
+const title = document.getElementById("title");
+const desc = document.getElementById("desc");
 
-/* ---------- load content.json (robust) ---------- */
-async function loadContent(){
-  try{
-    const res = await fetch(CONTENT_PATH + '?_=' + Date.now());
-    if(!res.ok) throw new Error('content.json not found');
-    const json = await res.json();
-    // Ensure structure is safe
-    if(!json || !Array.isArray(json.series)) throw new Error('invalid content.json');
-    CONTENT = json;
-  }catch(e){
-    // Fallback demo content (no media)
-    CONTENT = {
-      series:[
-        {
-          id:'s_demo',
-          name:'Demo Series',
-          desc:'No media available. Edit content.json to add series, seasons, and episodes.',
-          cover:'',
-          seasons:[
-            { id:'season1', title:'Season 1', episodes:[
-              { id:'ep1', title:'Sample Ep', desc:'Coming soon.', videoUrl:'' }
-            ]}
-          ]
-        }
-      ]
+data.forEach(series => {
+    const sBtn = document.createElement("button");
+    sBtn.className = "series-btn";
+    sBtn.textContent = series.name;
+    sidebar.appendChild(sBtn);
+
+    sBtn.onclick = () => {
+        sidebar.querySelectorAll(".episode-btn").forEach(e => e.remove());
+
+        series.episodes.forEach(ep => {
+            const eBtn = document.createElement("button");
+            eBtn.className = "episode-btn";
+            eBtn.textContent = "▶ " + ep.title;
+            sidebar.appendChild(eBtn);
+
+            eBtn.onclick = () => {
+                player.src = ep.youtube;
+                title.textContent = ep.title;
+                desc.textContent = ep.description;
+            };
+        });
     };
-    console.warn('Using demo content (content.json missing or invalid).', e);
-  }
-  render();
-}
-
-/* ---------- render grid ---------- */
-function render(){
-  const grid = qs('grid'); if(!grid) return;
-  grid.innerHTML='';
-  const q = (qs('q').value||'').trim().toLowerCase();
-  let shown=0;
-  (CONTENT.series||[]).forEach(s=>{
-    const seasons = Array.isArray(s.seasons) ? s.seasons : [];
-    const match = !q || s.name.toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q) ||
-      seasons.some(se => se.title.toLowerCase().includes(q) || (Array.isArray(se.episodes) ? se.episodes.some(ep => (ep.title||'').toLowerCase().includes(q)) : false));
-    if(!match) return;
-    shown++;
-    const card=document.createElement('div'); card.className='card';
-    const coverStyle = s.cover ? `background-image:url(${s.cover});background-size:cover;background-position:center` : '';
-    card.innerHTML=`
-      <div class="cover" style="${coverStyle}">${!s.cover?'<div style="font-weight:900;color:#cfeee0">'+escapeHtml((s.name||'').slice(0,2).toUpperCase())+'</div>':''}</div>
-      <div class="card-body">
-        <div class="card-title">${escapeHtml(s.name)}</div>
-        <div class="card-sub">${escapeHtml(s.desc||'')}</div>
-        <div class="meta">
-          <div class="pill">${seasons.length} seasons</div>
-          <div style="display:flex;gap:8px"><button class="btn small" onclick="openSeries('${s.id}',event)">View</button></div>
-        </div>
-      </div>
-    `;
-    grid.appendChild(card);
-  });
-  qs('count').textContent = shown;
-  qs('seriesCount').textContent = (CONTENT.series||[]).length + ' total';
-}
-
-/* ---------- open a series modal and list seasons/episodes ---------- */
-function openSeries(seriesId, ev){
-  if(ev) ev.stopPropagation();
-  const s = (CONTENT.series||[]).find(x=>x.id===seriesId); if(!s) return;
-  qs('playerTitle').textContent = s.name;
-  qs('playerMeta').textContent = s.desc || '';
-  const wrap = qs('playerModal').querySelector('.player');
-  let html = '';
-  (Array.isArray(s.seasons) ? s.seasons : []).forEach(se=>{
-    html += `<div style="margin-bottom:12px"><strong>${escapeHtml(se.title)}</strong><div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">`;
-    (Array.isArray(se.episodes) ? se.episodes : []).forEach(ep=>{
-      const hasVideo = !!(ep && (ep.videoUrl || ep.videoData));
-      html += `<div style="background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:8px;border-radius:8px">
-        <div style="font-weight:800">${escapeHtml(ep.title || 'Untitled')}</div>
-        <div class="muted" style="margin-top:6px">${escapeHtml(ep.desc || '')}</div>
-        <div style="margin-top:8px">` + (hasVideo
-          ? `<button class="btn small" onclick="playEpisodeById('${seriesId}','${se.id}','${ep.id}')">Play</button>`
-          : `<button class="btn small ghost" disabled>Coming soon</button>`) + `</div></div>`;
-    });
-    html += `</div></div>`;
-  });
-  wrap.innerHTML = html || '<div class="muted">No seasons/episodes yet.</div>';
-  show(qs('playerModal'));
-}
-
-/* ---------- YouTube helper (fixed and defensive) ---------- */
-function youtubeEmbedUrl(url){
-  try{
-    if(!url || typeof url !== 'string') return null;
-    let id = '';
-    if(url.includes('youtu.be/')) id = url.split('youtu.be/')[1].split(/[?&]/)[0];
-    else if(url.includes('watch?v=')) id = url.split('watch?v=')[1].split(/[?&]/)[0];
-    else if(url.includes('/embed/')) id = url.split('/embed/')[1].split(/[?&]/)[0];
-    // strip possible params
-    return id ? `https://www.youtube.com/embed/${id}?rel=0&autoplay=1` : null;
-  }catch(e){ return null; }
-}
-
-/* ---------- play logic ---------- */
-function playEpisodeById(sid,seId,epId){
-  const s=(CONTENT.series||[]).find(x=>x.id===sid); if(!s) return;
-  const se=(Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seId); if(!se) return;
-  const ep=(Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===epId); if(!ep) return;
-  playEpisodeObj(s,se,ep);
-}
-function playEpisodeObj(s,se,ep){
-  const video = qs('playerVideo');
-  const iframeWrap = qs('playerIframeWrap');
-  video.pause(); video.removeAttribute('src'); video.style.display='none';
-  iframeWrap.innerHTML=''; iframeWrap.style.display='none';
-
-  const url = ep.videoUrl || ep.videoData || '';
-  if(!url){ alert('No video available for this episode.'); return; }
-
-  const embed = youtubeEmbedUrl(url);
-  if(embed){
-    iframeWrap.style.display='block';
-    // lightweight responsive iframe
-    iframeWrap.innerHTML = `<div style="position:relative;padding-top:56.25%"><iframe src="${embed}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:10px"></iframe></div>`;
-  } else {
-    video.style.display='block';
-    video.src = url;
-    video.play().catch(()=>{});
-  }
-  qs('playerTitle').textContent = ep.title || 'Untitled';
-  qs('playerMeta').textContent = `${s.name} — ${se.title}`;
-  show(qs('playerModal'));
-}
-
-/* ---------- close player ---------- */
-function closePlayer(){
-  const video = qs('playerVideo'); if(video){ video.pause(); video.removeAttribute('src'); }
-  const iframeWrap = qs('playerIframeWrap'); if(iframeWrap){ iframeWrap.innerHTML=''; iframeWrap.style.display='none'; }
-  hide(qs('playerModal'));
-}
-
-/* ---------- how modal ---------- */
-function showHow(){ show(qs('howModal')); }
-function closeHow(){ hide(qs('howModal')); }
-
-/* ---------- logo (simple, non-error) ---------- */
-function loadLogo(){
-  const img = qs('logoImg'), letter = qs('logoLetter');
-  if(!img) return;
-  img.src = '/logo.png';
-  img.onload = () => { img.style.display='block'; if(letter) letter.style.display='none'; };
-  img.onerror = () => { img.style.display='none'; if(letter) letter.style.display='block'; };
-}
-
-/* ---------- init ---------- */
-(async function init(){
-  loadLogo();
-  await loadContent();
-  // close modals on backdrop click
-  document.querySelectorAll('.backdrop').forEach(d => d.addEventListener('click', e => { if(e.target === d) hide(d); }));
-})();
+});
 </script>
 
 </body>
