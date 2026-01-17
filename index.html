@@ -1,611 +1,338 @@
-import React, { useEffect, useState } from "react";
-
-// Streaming Service - Single-file React app
-// - Uses Tailwind CSS classes for styling
-// - Stores data in localStorage under 'stream_data_v1' (series, seasons, episodes)
-// - Supports adding series, seasons, episodes (including uploading cover images and episode videos as data URLs)
-// NOTE: Storing large videos/images in localStorage may exceed browser limits. For demo/prototyping only.
-
-function uid(prefix = "id") {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WOB WATCH+</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+:root{
+  --accent:#004d29; --bg-1:#041411; --bg-2:#06261a; --card:#062a1e; --muted:#9ec7b0;
+  --radius:12px; --glass: rgba(255,255,255,0.03);
+  --maxw:1100px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+  background:linear-gradient(180deg,var(--bg-1),#07130f 60%);
+  color:#e9fef0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.35;
 }
 
-async function fileToDataUrl(file) {
-  return await new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload = () => res(reader.result);
-    reader.onerror = (e) => rej(e);
-    reader.readAsDataURL(file);
-  });
+/* header */
+.header{
+  display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.03);
+  background:linear-gradient(90deg, rgba(0,77,41,0.06), transparent);
+  position:sticky;top:0;z-index:40;
 }
+#logo{
+  width:56px;height:56px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;color:#fff;overflow:hidden;
+}
+#logo img{width:100%;height:100%;object-fit:cover;display:block}
+.brand{display:flex;flex-direction:column}
+.brand .title{color:var(--accent);font-weight:800}
+.brand .sub{color:var(--muted);font-size:13px;margin-top:2px}
 
-const STORAGE_KEY = "stream_data_v1";
+/* header actions */
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{
+  background:var(--accent);border:0;color:white;padding:8px 12px;border-radius:10px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,77,41,0.12)
+}
+.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);box-shadow:none}
+.btn.small{padding:6px 8px;font-size:13px;border-radius:8px}
 
-export default function StreamingApp() {
-  const [data, setData] = useState({ series: [] });
-  const [view, setView] = useState({ mode: "browse", seriesId: null, seasonId: null });
+/* main layout */
+main{max-width:var(--maxw);margin:28px auto;padding:0 18px 90px}
+.topbar{display:flex;gap:12px;align-items:center;margin-bottom:18px}
+.search{flex:1;display:flex;gap:10px;align-items:center;background:var(--card);padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)}
+.search input{background:transparent;border:0;outline:0;color:inherit;font-size:15px;width:100%}
 
-  // UI states for modals/forms
-  const [showAddSeries, setShowAddSeries] = useState(false);
-  const [newSeries, setNewSeries] = useState({ title: "", description: "", coverFile: null });
+/* grid */
+.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-radius:var(--radius);overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.6);
+  cursor:pointer;transition:transform .16s,box-shadow .16s;
+}
+.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.85)}
+.cover{height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#083925,#06231b);color:var(--muted);font-weight:800}
+.card-body{padding:12px 14px}
+.card-title{font-weight:800;color:#e9fff4;margin-bottom:6px}
+.card-sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:999px;color:var(--muted);font-weight:700;font-size:13px}
 
-  const [showAddSeason, setShowAddSeason] = useState(false);
-  const [newSeason, setNewSeason] = useState({ title: "" });
+/* modal */
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:120;padding:18px}
+.modal{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:16px;width:100%;max-width:920px;box-shadow:0 30px 80px rgba(0,0,0,0.8);color:inherit}
+.modal h3{margin:0 0 8px 0;color:var(--accent)}
+.cols{display:grid;grid-template-columns:1fr 360px;gap:12px}
+.field{display:flex;flex-direction:column;gap:8px}
+input[type="text"],textarea{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+textarea{min-height:100px;resize:vertical}
+.player video, .player iframe{width:100%;height:auto;border-radius:10px;background:black;display:block}
 
-  const [showAddEpisode, setShowAddEpisode] = useState(false);
-  const [newEpisode, setNewEpisode] = useState({ title: "", description: "", videoFile: null, videoUrl: "" });
+.muted{color:var(--muted);font-size:13px}
+@media (max-width:920px){.cols{grid-template-columns:1fr}.cover{height:120px}.modal{max-width:95%}}
+/* small, neat footer */
+.footer{max-width:var(--maxw);margin:18px auto 60px;padding:0 18px;color:var(--muted);font-size:13px;text-align:center}
+</style>
+</head>
+<body>
 
-  const [playing, setPlaying] = useState(null); // {seriesId, seasonId, episode}
+<header class="header">
+  <div id="logo" title="Replace logo.png in repo root to show your logo">
+    <img id="logoImg" src="" alt="" style="display:none">
+    <span id="logoLetter">W</span>
+  </div>
 
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      try {
-        setData(JSON.parse(raw));
-      } catch (e) {
-        console.warn("Failed to parse stored data", e);
-        setData({ series: [] });
-      }
-    } else {
-      // seed with demo series
-      const demo = {
-        series: [
-          {
-            id: uid("s"),
-            title: "Demo Series",
-            description: "A short demo series to get you started.",
-            coverDataUrl: null,
-            seasons: [
-              {
-                id: uid("season"),
-                title: "Season 1",
-                episodes: [
-                  {
-                    id: uid("ep"),
-                    title: "Episode 1 — Sample",
-                    description: "This is a sample episode. Upload your own videos to replace it.",
-                    // small sample remote video url could be used but for privacy we leave blank here
-                    videoDataUrl: "",
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-      setData(demo);
-    }
-  }, []);
+  <div class="brand">
+    <div class="title">WOB WATCH+</div>
+    <div class="sub">Simple streaming — public</div>
+  </div>
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    } catch (e) {
-      console.warn("Failed to save to localStorage (size limit?)", e);
-    }
-  }, [data]);
+  <div class="header-actions">
+    <div class="muted">Admins edit <code>content.json</code> in the repo</div>
+    <button class="btn small ghost" onclick="showHow()">How to add episodes</button>
+  </div>
+</header>
 
-  // --- CRUD helpers ---
-  function addSeriesObject(seriesObj) {
-    setData((d) => ({ ...d, series: [seriesObj, ...d.series] }));
-  }
-
-  async function handleCreateSeries(e) {
-    e.preventDefault();
-    const id = uid("series");
-    let coverDataUrl = null;
-    if (newSeries.coverFile) {
-      coverDataUrl = await fileToDataUrl(newSeries.coverFile);
-    }
-    const seriesObj = {
-      id,
-      title: newSeries.title || "Untitled Series",
-      description: newSeries.description || "",
-      coverDataUrl,
-      seasons: [],
-    };
-    addSeriesObject(seriesObj);
-    setNewSeries({ title: "", description: "", coverFile: null });
-    setShowAddSeries(false);
-    setView({ mode: "manage", seriesId: id, seasonId: null });
-  }
-
-  function addSeasonToSeries(seriesId, seasonObj) {
-    setData((d) => ({
-      ...d,
-      series: d.series.map((s) => (s.id === seriesId ? { ...s, seasons: [seasonObj, ...s.seasons] } : s)),
-    }));
-  }
-
-  async function handleCreateSeason(e) {
-    e.preventDefault();
-    const sid = uid("season");
-    const seasonObj = { id: sid, title: newSeason.title || `Season ${sid}`, episodes: [] };
-    addSeasonToSeries(view.seriesId, seasonObj);
-    setNewSeason({ title: "" });
-    setShowAddSeason(false);
-    setView((v) => ({ ...v, seasonId: sid }));
-  }
-
-  function addEpisodeToSeason(seriesId, seasonId, episodeObj) {
-    setData((d) => ({
-      ...d,
-      series: d.series.map((s) =>
-        s.id === seriesId
-          ? {
-              ...s,
-              seasons: s.seasons.map((se) => (se.id === seasonId ? { ...se, episodes: [episodeObj, ...se.episodes] } : se)),
-            }
-          : s
-      ),
-    }));
-  }
-
-  async function handleCreateEpisode(e) {
-    e.preventDefault();
-    const eid = uid("ep");
-    let videoDataUrl = newEpisode.videoUrl || "";
-    if (newEpisode.videoFile) {
-      // convert to data url (may be large!)
-      videoDataUrl = await fileToDataUrl(newEpisode.videoFile);
-    }
-    const episodeObj = {
-      id: eid,
-      title: newEpisode.title || `Episode ${eid}`,
-      description: newEpisode.description || "",
-      videoDataUrl,
-    };
-    addEpisodeToSeason(view.seriesId, view.seasonId, episodeObj);
-    setNewEpisode({ title: "", description: "", videoFile: null, videoUrl: "" });
-    setShowAddEpisode(false);
-    // automatically play the new episode
-    setPlaying({ seriesId: view.seriesId, seasonId: view.seasonId, episode: episodeObj });
-  }
-
-  function findSeries(seriesId) {
-    return data.series.find((s) => s.id === seriesId);
-  }
-
-  function findSeason(seriesId, seasonId) {
-    const s = findSeries(seriesId);
-    return s?.seasons?.find((se) => se.id === seasonId);
-  }
-
-  // Delete helpers
-  function deleteSeries(seriesId) {
-    if (!confirm("Delete this series? This cannot be undone.")) return;
-    setData((d) => ({ ...d, series: d.series.filter((s) => s.id !== seriesId) }));
-    setView({ mode: "browse", seriesId: null, seasonId: null });
-  }
-
-  function deleteSeason(seriesId, seasonId) {
-    if (!confirm("Delete this season? This cannot be undone.")) return;
-    setData((d) => ({
-      ...d,
-      series: d.series.map((s) => (s.id === seriesId ? { ...s, seasons: s.seasons.filter((se) => se.id !== seasonId) } : s)),
-    }));
-    setView((v) => ({ ...v, seasonId: null }));
-  }
-
-  function deleteEpisode(seriesId, seasonId, episodeId) {
-    if (!confirm("Delete this episode? This cannot be undone.")) return;
-    setData((d) => ({
-      ...d,
-      series: d.series.map((s) =>
-        s.id === seriesId
-          ? {
-              ...s,
-              seasons: s.seasons.map((se) => (se.id === seasonId ? { ...se, episodes: se.episodes.filter((ep) => ep.id !== episodeId) } : se)),
-            }
-          : s
-      ),
-    }));
-  }
-
-  // --- UI components ---
-  function Header() {
-    return (
-      <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-        <div className="flex items-center gap-4">
-          <div className="text-2xl font-bold">Streamly</div>
-          <nav className="hidden md:flex gap-4 text-sm opacity-90">
-            <button onClick={() => setView({ mode: "browse", seriesId: null, seasonId: null })}>Browse</button>
-            <button onClick={() => setView({ mode: "manage", seriesId: null, seasonId: null })}>Manage</button>
-          </nav>
-        </div>
-        <div className="flex gap-3 items-center">
-          <button
-            className="px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-sm"
-            onClick={() => setShowAddSeries(true)}
-          >
-            + Add Series
-          </button>
-          <div className="text-xs opacity-80 px-3 py-1">Local demo • saved in browser</div>
-        </div>
-      </header>
-    );
-  }
-
-  function SeriesGrid() {
-    return (
-      <div className="p-6">
-        <h2 className="text-2xl mb-4">All Series</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {data.series.map((s) => (
-            <div key={s.id} className="bg-slate-900 rounded-2xl overflow-hidden shadow-lg">
-              <div
-                className="h-40 bg-center bg-cover"
-                style={{ backgroundImage: s.coverDataUrl ? `url(${s.coverDataUrl})` : undefined }}
-              >
-                {!s.coverDataUrl && <div className="h-40 flex items-center justify-center text-slate-400">No cover</div>}
-              </div>
-              <div className="p-4">
-                <div className="font-semibold text-lg">{s.title}</div>
-                <div className="text-xs opacity-80 mt-1">{s.description}</div>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    className="px-3 py-1 rounded bg-indigo-600 text-sm"
-                    onClick={() => setView({ mode: "series", seriesId: s.id, seasonId: null })}
-                  >
-                    View
-                  </button>
-                  <button
-                    className="px-3 py-1 rounded bg-white/5 text-sm"
-                    onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: null })}
-                  >
-                    Manage
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  function SeriesView({ seriesId }) {
-    const s = findSeries(seriesId);
-    if (!s) return <div className="p-6">Series not found.</div>;
-    return (
-      <div className="p-6">
-        <div className="flex gap-6">
-          <div className="w-48 h-32 bg-cover bg-center rounded-lg" style={{ backgroundImage: s.coverDataUrl ? `url(${s.coverDataUrl})` : undefined }}>
-            {!s.coverDataUrl && <div className="w-48 h-32 flex items-center justify-center text-slate-400">No cover</div>}
-          </div>
-          <div>
-            <h2 className="text-3xl font-bold">{s.title}</h2>
-            <p className="mt-2 text-sm opacity-80">{s.description}</p>
-            <div className="mt-4 flex gap-2">
-              <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => { setShowAddSeason(true); setView((v) => ({ ...v, seriesId })); }}>
-                + Add Season
-              </button>
-              <button className="px-3 py-1 rounded bg-white/5" onClick={() => setView({ mode: "manage", seriesId, seasonId: null })}>
-                Manage Series
-              </button>
-              <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteSeries(seriesId)}>
-                Delete Series
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="text-xl mb-3">Seasons</h3>
-          {s.seasons.length === 0 && <div className="text-sm opacity-80">No seasons yet.</div>}
-          <div className="space-y-4">
-            {s.seasons.map((se) => (
-              <div key={se.id} className="bg-slate-900 rounded p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-semibold">{se.title}</div>
-                    <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="px-2 py-1 rounded bg-indigo-600 text-sm"
-                      onClick={() => setView({ mode: "season", seriesId, seasonId: se.id })}
-                    >
-                      View
-                    </button>
-                    <button className="px-2 py-1 rounded bg-red-700 text-sm" onClick={() => deleteSeason(seriesId, se.id)}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {se.episodes.map((ep) => (
-                    <div key={ep.id} className="p-3 bg-slate-800 rounded">
-                      <div className="font-medium">{ep.title}</div>
-                      <div className="text-xs opacity-80 mt-1">{ep.description}</div>
-                      <div className="mt-3 flex gap-2">
-                        <button className="px-2 py-1 rounded bg-green-600 text-sm" onClick={() => setPlaying({ seriesId, seasonId: se.id, episode: ep })}>
-                          Play
-                        </button>
-                        <button className="px-2 py-1 rounded bg-red-700 text-sm" onClick={() => deleteEpisode(seriesId, se.id, ep.id)}>
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function ManageView({ seriesId }) {
-    if (!seriesId) {
-      return (
-        <div className="p-6">
-          <h2 className="text-2xl mb-4">Manage</h2>
-          <p className="mb-4">Select a series to manage or create a new one.</p>
-          <div className="space-y-4">
-            {data.series.map((s) => (
-              <div key={s.id} className="p-4 bg-slate-900 rounded flex justify-between items-center">
-                <div>
-                  <div className="font-medium">{s.title}</div>
-                  <div className="text-xs opacity-80">{s.seasons.length} seasons</div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: null })}>
-                    Manage
-                  </button>
-                  <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteSeries(s.id)}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    const s = findSeries(seriesId);
-    if (!s) return <div className="p-6">Series not found.</div>;
-
-    return (
-      <div className="p-6">
-        <h2 className="text-2xl mb-2">Manage: {s.title}</h2>
-        <div className="mb-4 text-sm opacity-80">Description: {s.description}</div>
-
-        <div className="mb-6">
-          <h3 className="font-semibold mb-2">Seasons</h3>
-          <div className="space-y-3">
-            {s.seasons.map((se) => (
-              <div key={se.id} className="p-3 bg-slate-900 rounded flex justify-between items-center">
-                <div>
-                  <div className="font-medium">{se.title}</div>
-                  <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
-                </div>
-                <div className="flex gap-2">
-                  <button className="px-2 py-1 rounded bg-indigo-600" onClick={() => setView({ mode: "season", seriesId: s.id, seasonId: se.id })}>
-                    Edit
-                  </button>
-                  <button className="px-2 py-1 rounded bg-red-700" onClick={() => deleteSeason(s.id, se.id)}>
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="font-semibold mb-2">Add Season</h3>
-          <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setShowAddSeason(true)}>
-            + New Season
-          </button>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="font-semibold mb-2">Quick Add Episode</h3>
-          <p className="text-xs opacity-80 mb-2">Select a season below and use the episode form.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {s.seasons.map((se) => (
-              <div key={se.id} className="p-3 bg-slate-800 rounded">
-                <div className="flex justify-between">
-                  <div>
-                    <div className="font-medium">{se.title}</div>
-                    <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
-                  </div>
-                  <div>
-                    <button
-                      className="px-3 py-1 rounded bg-green-600"
-                      onClick={() => setView({ mode: "manage", seriesId: s.id, seasonId: se.id }) || setShowAddEpisode(true)}
-                    >
-                      + Add Episode
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function SeasonView({ seriesId, seasonId }) {
-    const se = findSeason(seriesId, seasonId);
-    if (!se) return <div className="p-6">Season not found.</div>;
-
-    return (
-      <div className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-bold">{se.title}</h2>
-            <div className="text-xs opacity-80">{se.episodes.length} episodes</div>
-          </div>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 rounded bg-indigo-600" onClick={() => setShowAddEpisode(true)}>
-              + Add Episode
-            </button>
-            <button className="px-3 py-1 rounded bg-white/5" onClick={() => setView({ mode: "manage", seriesId, seasonId })}>
-              Manage
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {se.episodes.map((ep) => (
-            <div key={ep.id} className="bg-slate-900 rounded p-4">
-              <div className="font-medium">{ep.title}</div>
-              <div className="text-xs opacity-80 mt-1">{ep.description}</div>
-              <div className="mt-3 flex gap-2">
-                <button className="px-3 py-1 rounded bg-green-600" onClick={() => setPlaying({ seriesId, seasonId, episode: ep })}>
-                  Play
-                </button>
-                <button className="px-3 py-1 rounded bg-red-700" onClick={() => deleteEpisode(seriesId, seasonId, ep.id)}>
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // --- Main render ---
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-850 to-slate-900 text-white">
-      <Header />
-      <main className="md:flex">
-        <aside className="md:w-64 p-4 border-r border-slate-800 hidden md:block">
-          <div className="mb-6">
-            <div className="font-semibold mb-2">Library</div>
-            <div className="space-y-2 text-sm">
-              <button className="block w-full text-left" onClick={() => setView({ mode: "browse", seriesId: null, seasonId: null })}>Browse</button>
-              <button className="block w-full text-left" onClick={() => setView({ mode: "manage", seriesId: null, seasonId: null })}>Manage</button>
-            </div>
-          </div>
-
-          <div>
-            <div className="font-semibold mb-2">Your Series</div>
-            <div className="space-y-2 text-sm">
-              {data.series.map((s) => (
-                <button key={s.id} className={`block w-full text-left truncate ${view.seriesId === s.id ? "font-bold" : ""}`} onClick={() => setView({ mode: "series", seriesId: s.id, seasonId: null })}>
-                  {s.title}
-                </button>
-              ))}
-            </div>
-          </div>
-        </aside>
-
-        <section className="flex-1">
-          {view.mode === "browse" && <SeriesGrid />}
-          {view.mode === "series" && view.seriesId && <SeriesView seriesId={view.seriesId} />}
-          {view.mode === "manage" && <ManageView seriesId={view.seriesId} />}
-          {view.mode === "season" && view.seriesId && view.seasonId && <SeasonView seriesId={view.seriesId} seasonId={view.seasonId} />}
-        </section>
-      </main>
-
-      {/* Modals: Add Series */}
-      {showAddSeries && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
-          <form onSubmit={handleCreateSeries} className="bg-slate-800 rounded-lg p-6 w-full max-w-lg">
-            <h3 className="text-xl mb-3">Add Series</h3>
-            <label className="block mb-2 text-sm">Title</label>
-            <input value={newSeries.title} onChange={(e) => setNewSeries((s) => ({ ...s, title: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
-            <label className="block mt-3 mb-2 text-sm">Description</label>
-            <textarea value={newSeries.description} onChange={(e) => setNewSeries((s) => ({ ...s, description: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
-            <label className="block mt-3 mb-2 text-sm">Cover Image (optional)</label>
-            <input type="file" accept="image/*" onChange={(e) => setNewSeries((s) => ({ ...s, coverFile: e.target.files?.[0] || null }))} />
-            <div className="mt-4 flex gap-2 justify-end">
-              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddSeries(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
-                Create Series
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Modal: Add Season */}
-      {showAddSeason && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4">
-          <form onSubmit={handleCreateSeason} className="bg-slate-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-xl mb-3">Add Season to {findSeries(view.seriesId)?.title}</h3>
-            <label className="block mb-2 text-sm">Season Title</label>
-            <input value={newSeason.title} onChange={(e) => setNewSeason({ title: e.target.value })} className="w-full p-2 rounded bg-slate-900" />
-            <div className="mt-4 flex gap-2 justify-end">
-              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddSeason(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
-                Create Season
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Modal: Add Episode */}
-      {showAddEpisode && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 p-4 overflow-auto">
-          <form onSubmit={handleCreateEpisode} className="bg-slate-800 rounded-lg p-6 w-full max-w-2xl">
-            <h3 className="text-xl mb-3">Add Episode</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <label className="block mb-2 text-sm">Title</label>
-                <input value={newEpisode.title} onChange={(e) => setNewEpisode((s) => ({ ...s, title: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
-                <label className="block mt-3 mb-2 text-sm">Description</label>
-                <textarea value={newEpisode.description} onChange={(e) => setNewEpisode((s) => ({ ...s, description: e.target.value }))} className="w-full p-2 rounded bg-slate-900" />
-              </div>
-              <div>
-                <label className="block mb-2 text-sm">Upload Video File (or paste remote URL below)</label>
-                <input type="file" accept="video/*" onChange={(e) => setNewEpisode((s) => ({ ...s, videoFile: e.target.files?.[0] || null }))} />
-                <label className="block mt-3 mb-2 text-sm">Or Video URL</label>
-                <input value={newEpisode.videoUrl} onChange={(e) => setNewEpisode((s) => ({ ...s, videoUrl: e.target.value }))} className="w-full p-2 rounded bg-slate-900" placeholder="https://.../video.mp4" />
-                <div className="mt-2 text-xs opacity-80">Note: Uploaded files are stored in browser (may be large). For production, use a backend + object storage.</div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-2 justify-end">
-              <button type="button" className="px-3 py-1 rounded bg-white/5" onClick={() => setShowAddEpisode(false)}>
-                Cancel
-              </button>
-              <button type="submit" className="px-3 py-1 rounded bg-indigo-600">
-                Create Episode
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Video Player Modal */}
-      {playing && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/90 p-4">
-          <div className="w-full max-w-4xl">
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <div className="font-semibold text-lg">{playing.episode.title}</div>
-                <div className="text-xs opacity-80">{playing.episode.description}</div>
-              </div>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 rounded bg-white/5" onClick={() => setPlaying(null)}>
-                  Close
-                </button>
-              </div>
-            </div>
-            {playing.episode.videoDataUrl ? (
-              <video controls className="w-full rounded bg-black">
-                <source src={playing.episode.videoDataUrl} />
-                Your browser does not support the video tag.
-              </video>
-            ) : (
-              <div className="p-12 bg-slate-900 rounded text-center">No video attached. Add an episode video or provide a remote URL.</div>
-            )}
-          </div>
-        </div>
-      )}
+<main>
+  <div class="topbar">
+    <div class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="opacity:.75"><path d="M21 21l-4.35-4.35" stroke="#cfeee0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="#cfeee0" stroke-width="1.6"/></svg>
+      <input id="q" placeholder="Search series, seasons, episodes..." oninput="render()">
     </div>
-  );
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="muted" id="seriesCount"></div>
+    </div>
+  </div>
+
+  <section>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+      <h2 style="margin:0">Series</h2>
+      <div class="muted">(<span id="count">0</span>)</div>
+    </div>
+
+    <div id="grid" class="grid" aria-live="polite"></div>
+  </section>
+</main>
+
+<!-- Player / Series modal -->
+<div id="playerModal" class="backdrop" role="dialog" aria-hidden="true">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <h3 id="playerTitle">Playing</h3>
+        <div id="playerMeta" class="muted"></div>
+      </div>
+      <div>
+        <button class="btn ghost small" onclick="closePlayer()">Close</button>
+      </div>
+    </div>
+    <div style="margin-top:12px" class="player">
+      <video id="playerVideo" controls style="display:none"></video>
+      <div id="playerIframeWrap" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- How-to modal -->
+<div id="howModal" class="backdrop" role="dialog" aria-hidden="true">
+  <div class="modal">
+    <h3>How to add episodes (super simple)</h3>
+    <div class="cols">
+      <div>
+        <ol>
+          <li>Upload your video to a public place (recommended: YouTube as *Unlisted* for big files).</li>
+          <li>Open <code>content.json</code> in your GitHub repo and click ✏️ (Edit file).</li>
+          <li>Find the season you want and paste a new episode object (example on the right).</li>
+          <li>Commit changes. Refresh the site after ~30–60s.</li>
+        </ol>
+        <p class="muted">For small MP4s (<100MB) you may store them in the repo at <code>/videos/</code> and reference the URL.</p>
+      </div>
+      <div>
+        <strong>Episode JSON (paste inside a season's <code>episodes</code> array):</strong>
+        <pre style="background:#041a14;padding:10px;border-radius:8px;color:#cfeee0;font-size:13px">
+,
+{
+  "id":"ep_my_first",
+  "title":"Episode 1 — Pilot",
+  "desc":"Short description",
+  "videoUrl":"https://youtu.be/ABCDEFG" 
 }
+        </pre>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button class="btn ghost small" onclick="closeHow()">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Made for WOB WATCH+. To publish: put this `index.html` (and `content.json`) in your repo root and enable GitHub Pages. </div>
+
+<script>
+/* ---------- config ---------- */
+const CONTENT_PATH = '/content.json'; // must exist in repo root
+let CONTENT = { series: [] };
+
+/* ---------- tiny helpers ---------- */
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function qs(id){ return document.getElementById(id); }
+function show(el){ el.style.display='flex'; el.setAttribute('aria-hidden','false'); }
+function hide(el){ el.style.display='none'; el.setAttribute('aria-hidden','true'); }
+
+/* ---------- load content.json (with graceful fallback) ---------- */
+async function loadContent(){
+  try{
+    const res = await fetch(CONTENT_PATH + '?_=' + Date.now());
+    if(!res.ok) throw new Error('not found');
+    CONTENT = await res.json();
+  }catch(e){
+    // fallback demo content if content.json missing or invalid
+    CONTENT = {
+      series:[
+        {
+          id:'s_demo',
+          name:'Demo Series',
+          desc:'Edit content.json in your repo to replace this demo.',
+          cover:'',
+          seasons:[
+            { id:'season1', title:'Season 1', episodes:[
+              { id:'ep1', title:'Sample Ep', desc:'No video attached. Add your URL in content.json.', videoUrl:'' }
+            ]}
+          ]
+        }
+      ]
+    };
+    console.warn('content.json not found or invalid — using demo content.', e);
+  }
+  render();
+}
+
+/* ---------- render grid ---------- */
+function render(){
+  const grid = qs('grid'); grid.innerHTML='';
+  const q = (qs('q').value||'').trim().toLowerCase();
+  let shown=0;
+  (CONTENT.series||[]).forEach(s=>{
+    const match = !q || s.name.toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q) ||
+      (s.seasons||[]).some(se => se.title.toLowerCase().includes(q) || (se.episodes||[]).some(ep => (ep.title||'').toLowerCase().includes(q)));
+    if(!match) return;
+    shown++;
+    const card=document.createElement('div'); card.className='card';
+    const coverStyle = s.cover ? `background-image:url(${s.cover});background-size:cover;background-position:center` : '';
+    card.innerHTML=`
+      <div class="cover" style="${coverStyle}">${!s.cover?'<div style="font-weight:900;color:#cfeee0">'+escapeHtml((s.name||'').slice(0,2).toUpperCase())+'</div>':''}</div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(s.name)}</div>
+        <div class="card-sub">${escapeHtml(s.desc||'')}</div>
+        <div class="meta">
+          <div class="pill">${(s.seasons||[]).length} seasons</div>
+          <div style="display:flex;gap:8px"><button class="btn small" onclick="openSeries('${s.id}',event)">View</button></div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+  qs('count').textContent = shown;
+  qs('seriesCount').textContent = (CONTENT.series||[]).length + ' total';
+}
+
+/* ---------- open a series modal and list seasons/episodes ---------- */
+function openSeries(seriesId, ev){
+  if(ev) ev.stopPropagation();
+  const s = (CONTENT.series||[]).find(x=>x.id===seriesId); if(!s) return;
+  qs('playerTitle').textContent = s.name;
+  qs('playerMeta').textContent = s.desc || '';
+  // build list of seasons / episodes in the player area
+  const player = qs('playerModal');
+  const wrap = qs('playerModal').querySelector('.player');
+  let html = '';
+  (s.seasons||[]).forEach(se=>{
+    html += `<div style="margin-bottom:12px"><strong>${escapeHtml(se.title)}</strong><div style="margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">`;
+    (se.episodes||[]).forEach(ep=>{
+      html += `<div style="background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:8px;border-radius:8px"><div style="font-weight:800">${escapeHtml(ep.title)}</div><div class="muted" style="margin-top:6px">${escapeHtml(ep.desc||'')}</div><div style="margin-top:8px"><button class="btn small" onclick="playEpisodeById('${seriesId}','${se.id}','${ep.id}')">Play</button></div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  wrap.innerHTML = html || '<div class="muted">No seasons/episodes yet.</div>';
+  show(player);
+}
+
+/* ---------- play logic: supports MP4 URLs and YouTube links ---------- */
+function youtubeEmbedUrl(url){
+  try{
+    let id='';
+    if(url.includes('youtu.be/')) id = url.split('youtu.be/')[1].split(/[?&]/)[0];
+    else if(url.includes('watch?v=')) id = url.split('watch?v=')[1].split(/[?&]/)[0];
+    else if(url.includes('/embed/')) id = url.split('/embed/')[1].split(/[?&]/0)[0];
+    return id ? `https://www.youtube.com/embed/${id}?rel=0&autoplay=1` : null;
+  }catch(e){return null;}
+}
+
+function playEpisodeById(sid,seId,epId){
+  const s=(CONTENT.series||[]).find(x=>x.id===sid); if(!s) return;
+  const se=(s.seasons||[]).find(x=>x.id===seId); if(!se) return;
+  const ep=(se.episodes||[]).find(x=>x.id===epId); if(!ep) return;
+  playEpisodeObj(s,se,ep);
+}
+function playEpisodeObj(s,se,ep){
+  const video = qs('playerVideo');
+  const iframeWrap = qs('playerIframeWrap');
+  // reset
+  video.pause(); video.removeAttribute('src'); video.style.display='none';
+  iframeWrap.innerHTML=''; iframeWrap.style.display='none';
+  const url = ep.videoUrl || ep.videoData || '';
+  if(!url){ alert('No video URL for this episode. Admins: edit content.json to add a videoUrl.'); return; }
+  // YouTube?
+  const embed = youtubeEmbedUrl(url);
+  if(embed){
+    iframeWrap.style.display='block';
+    iframeWrap.innerHTML = `<iframe src="${embed}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="width:100%;height:480px;border-radius:10px"></iframe>`;
+  } else {
+    // assume direct MP4 or playable source
+    video.style.display='block';
+    video.src = url;
+    // try autoplay; user interaction rules may block autoplay with sound
+    video.play().catch(()=>{});
+  }
+  qs('playerTitle').textContent = ep.title;
+  qs('playerMeta').textContent = `${s.name} — ${se.title}`;
+  show(qs('playerModal'));
+}
+
+/* ---------- close player ---------- */
+function closePlayer(){
+  const video = qs('playerVideo'); video.pause(); video.removeAttribute('src');
+  const iframeWrap = qs('playerIframeWrap'); iframeWrap.innerHTML=''; iframeWrap.style.display='none';
+  hide(qs('playerModal'));
+}
+
+/* ---------- how modal ---------- */
+function showHow(){ show(qs('howModal')); }
+function closeHow(){ hide(qs('howModal')); }
+
+/* ---------- logo attempt (repo root /logo.png) ---------- */
+function loadLogo(){
+  fetch('/logo.png', {method:'HEAD'}).then(r=>{
+    if(r.ok){ qs('logoImg').src='/logo.png'; qs('logoImg').style.display='block'; qs('logoLetter').style.display='none'; }
+  }).catch(()=>{});
+}
+
+/* ---------- init ---------- */
+(async function init(){
+  loadLogo();
+  await loadContent();
+  // close modals on backdrop click
+  document.querySelectorAll('.backdrop').forEach(d => d.addEventListener('click', e => { if(e.target === d) hide(d); }));
+})();
+</script>
+
+</body>
+</html>
