@@ -3,7 +3,7 @@
     {
       "id": "s_demo",
       "name": "Demo Series",
-      "desc": "A short demo. Edit content.json to add your series/seasons/episodes.",
+      "desc": "No media available. Edit content.json in your repo to add episodes.",
       "cover": "",
       "seasons": [
         {
@@ -13,7 +13,7 @@
             {
               "id": "ep_demo_1",
               "title": "Sample Episode",
-              "desc": "Replace this with your episode.",
+              "desc": "Coming soon.",
               "videoUrl": ""
             }
           ]
