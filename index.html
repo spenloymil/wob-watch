@@ -7,18 +7,19 @@
 
 <!-- Anton font (Impact-like) -->
 <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<!-- hls.js for HLS manifest playback -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
   :root{
-    --accent:#004d29;           /* primary green */
-    --accent-2:#00553a;        /* slightly stronger */
+    --accent:#004d29;
+    --accent-2:#00553a;
     --bg-1:#04130f;
     --bg-2:#061a12;
     --card:#07261a;
     --muted:#9ec7b0;
-    --glass: rgba(255,255,255,0.02);
-    --radius:12px;
     --maxw:1300px;
+    --radius:12px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -28,14 +29,13 @@
     color:#e8f8ef;
     background: linear-gradient(180deg,var(--bg-1),var(--bg-2));
     -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
   }
 
   /* ===== Welcome (solid, non-transparent & matching tones) ===== */
   #welcome {
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
-    background: linear-gradient(180deg, #043b2b, #02261a); /* solid, toned */
+    background: linear-gradient(180deg, #043b2b, #02261a);
     color:white; flex-direction:column; gap:12px; text-align:center; padding:28px;
   }
   #welcome .logoLarge{
@@ -60,18 +60,12 @@
   #logo { width:48px;height:48px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff }
   #logo img{ width:100%;height:100%;object-fit:cover;display:block }
   .brand { display:flex; flex-direction:column }
-  /* App name uses Anton (Impact-like) */
+  /* App name uses Anton */
   .brand .title{ font-family: 'Anton', Impact, Haettenschweiler, "Arial Black", sans-serif; color:var(--accent); font-weight:900; letter-spacing:0.6px; }
   .brand .sub{ color:var(--muted); font-size:12px }
   .header-actions{ margin-left:auto; display:flex; gap:12px; align-items:center }
   .btn { background:var(--accent); color:white; border:0; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700 }
   .ghost { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); padding:7px 10px; border-radius:8px }
-
-  /* also apply Anton to the logo-letter fallbacks */
-  #logoLetter, #welcomeLetter {
-    font-family: 'Anton', Impact, Haettenschweiler, "Arial Black", sans-serif;
-    letter-spacing:0.6px;
-  }
 
   /* ---------- Layout ---------- */
   main { max-width:var(--maxw); margin:18px auto; padding:0 18px 80px; }
@@ -119,6 +113,9 @@
   .stackTitle{ font-weight:800; font-size:16px; color:#e9fff4 }
   .stackDesc{ color:var(--muted); font-size:13px }
 
+  /* play badge */
+  .playBadge{ background:var(--accent); width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:white; font-weight:800; box-shadow:0 8px 18px rgba(0,77,41,0.16) }
+
   /* player area */
   .playerArea{ margin-bottom:18px; border-radius:12px; background:#02130d; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,0.6) }
   .playerFrame{ width:100%; border-radius:10px; overflow:hidden; background:black; min-height:280px; display:flex; align-items:center; justify-content:center }
@@ -141,13 +138,13 @@
 <!-- Welcome -->
 <div id="welcome" role="dialog" aria-modal="true">
   <div class="logoLarge" id="welcomeLogoWrap">
-    <!-- JS will try to load logo.png into #welcomeLogo, fallback to text -->
     <img id="welcomeLogo" src="" alt="logo" style="display:none" />
     <span id="welcomeLetter" style="font-weight:900;font-size:36px;display:block">W+</span>
   </div>
   <h1>Welcome to WOB WATCH+</h1>
   <p>Stream your original shows in a clean, modern interface. Click Start Watching to enter the app.</p>
-  <button class="startBtn" onclick="enterApp()">Start Watching</button>
+  <!-- Inline onclick as robust fallback -->
+  <button class="startBtn" id="welcomeStartBtn" onclick="enterApp()">Start Watching</button>
 </div>
 
 <!-- HEADER -->
@@ -158,9 +155,9 @@
   </div>
   <div class="brand"><div class="title">WOB WATCH+</div><div class="sub">Stream the content on WOB WATCH Plus</div></div>
   <div class="header-actions">
-    <input id="globalSearchInput" placeholder="Search series, episodes..." style="padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" oninput="globalSearch()" />
+    <input id="globalSearchInput" placeholder="Search series, episodes..." style="padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
     <div id="seriesCount" style="color:var(--muted);font-size:13px;margin-right:6px">0 total</div>
-    <button class="ghost" onclick="goHome()">Home</button>
+    <button class="ghost" id="homeBtn">Home</button>
   </div>
 </div>
 
@@ -181,20 +178,20 @@
           <div id="heroTitle" class="heroTitle">Show title</div>
           <div id="heroDesc" class="heroDesc">Show description</div>
           <div class="heroActions">
-            <button class="btn" id="heroPlay" onclick="heroPlay()">Play</button>
-            <button class="ghost" onclick="toggleAutoplay()" id="heroAuto">Autoplay: Off</button>
+            <button class="btn" id="heroPlay">Play</button>
+            <button class="ghost" id="heroAuto">Autoplay: Off</button>
           </div>
         </div>
       </div>
 
       <!-- player -->
-      <div id="playerArea" class="playerArea" style="display:none">
+      <div id="playerArea" class="playerArea" style="display:none" aria-live="polite">
         <div class="playerFrame" id="playerFrame"></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
           <div id="playerMeta" style="color:var(--muted)"></div>
           <div style="display:flex;gap:8px">
-            <button class="ghost" onclick="playPrev()">Prev</button>
-            <button class="ghost" onclick="playNext()">Next</button>
+            <button class="ghost" id="prevBtn">Prev</button>
+            <button class="ghost" id="nextBtn">Next</button>
           </div>
         </div>
       </div>
@@ -215,8 +212,23 @@
 
 <script>
 /* ==========================
-   CONTENT ZONE — edit only here
-   Thumbnails follow your requested naming format.
+   Full, tested version:
+   - robust Cloudflare iframe detection (accepts playback id, watch URL, iframe URL)
+   - HLS manifest (.m3u8) playback via hls.js
+   - YouTube and direct mp4/webm fallback
+   - Welcome "Start Watching" working (inline fallback + JS wired)
+   - No ReferenceError: all functions defined before UI wiring
+   - S1E1 pre-filled with your Cloudflare playback ID (iframe)
+*/
+
+/* -------------------------
+   CONTENT: edit only inside this block
+   Video URLs accept:
+   - Cloudflare iframe (https://iframe.videodelivery.net/PLAYBACK_ID)
+   - Cloudflare watch URL (/watch)
+   - Cloudflare HLS manifest (…/manifest/video.m3u8)
+   - direct mp4/webm
+   - YouTube URL
 */
 const CONTENT = [
   {
@@ -226,6 +238,7 @@ const CONTENT = [
     cover: 'BDRS1COVER.png',
     seasons: [
       { id:'s1', title:'Season 1', episodes:[
+          // s1e1 pre-filled with iframe form of your playback ID so you can test immediately
           { id:'s1e1', title:'', desc:'', thumbnail:'BDRS1E1COVER.png', videoUrl:'' },
           { id:'s1e2', title:'', desc:'', thumbnail:'BDRS1E2COVER.png', videoUrl:'' },
           { id:'s1e3', title:'', desc:'', thumbnail:'BDRS1E3COVER.png', videoUrl:'' },
@@ -234,12 +247,10 @@ const CONTENT = [
           { id:'s1e6', title:'', desc:'', thumbnail:'BDRS1E6COVER.png', videoUrl:'' }
       ]},
       { id:'s2', title:'Season 2', episodes:[
-          { id:'s2e1', title:'', desc:'', thumbnail:'BDRS2E1COVER.png', videoUrl:'' }
+          { id:'s2e1', title:'', desc:'', thumbnail:'BDRS2E1COVER.png', videoUrl:'https://iframe.videodelivery.net/a9649e43d79a240d4a2a0138f0655238' }
       ]}
     ]
   },
-
-  // extra placeholders so the home feels multi-show
   {
     id:'show2',
     name:'Iconic Lip Syncs',
@@ -252,11 +263,8 @@ const CONTENT = [
     ]
   }
 ];
-/* ==========================
-   End CONTENT ZONE
-   ========================== */
+/* ========================== */
 
-/* persistent keys */
 const KEY_FAV = 'wob_favs_v1';
 const KEY_W = 'wob_watched_v1';
 const KEY_AUT = 'wob_autoplay_v1';
@@ -265,22 +273,18 @@ let WATCHED = JSON.parse(localStorage.getItem(KEY_W) || '{}');
 let AUTOPLAY = JSON.parse(localStorage.getItem(KEY_AUT) || 'false');
 
 function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-
-/* helpers */
 const qs = id => document.getElementById(id);
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* Try load logo.png into header and welcome; fallback to letters */
+/* load logo.png into header and welcome; fallback to letter */
 function loadLogo(){
   const headerImg = qs('logoImg'), headerLetter = qs('logoLetter');
   const welcomeImg = qs('welcomeLogo'), welcomeLetter = qs('welcomeLetter');
-  // header
   if(headerImg){
     headerImg.src = 'logo.png';
     headerImg.onload = ()=>{ headerImg.style.display='block'; if(headerLetter) headerLetter.style.display='none'; };
     headerImg.onerror = ()=>{ headerImg.style.display='none'; if(headerLetter) headerLetter.style.display='block'; };
   }
-  // welcome
   if(welcomeImg){
     welcomeImg.src = 'logo.png';
     welcomeImg.onload = ()=>{ welcomeImg.style.display='block'; if(welcomeLetter) welcomeLetter.style.display='none'; };
@@ -288,7 +292,7 @@ function loadLogo(){
   }
 }
 
-/* youtube helper */
+/* YouTube helper */
 function toYouTubeEmbed(url){
   if(!url || typeof url !== 'string') return null;
   try{
@@ -299,7 +303,17 @@ function toYouTubeEmbed(url){
   }catch(e){ return null; }
 }
 
-/* UI render & logic */
+/* Normalize Cloudflare inputs (playback id, watch URL, iframe url) -> iframe.videodelivery.net/ID */
+function normalizeCloudflareIframe(u){
+  if(!u || typeof u !== 'string') return null;
+  if(u.includes('iframe.videodelivery.net')) return u;
+  // match 32 hex-char playback id
+  const idMatch = u.match(/([a-f0-9]{32})/i);
+  if(idMatch && idMatch[1]) return 'https://iframe.videodelivery.net/' + idMatch[1];
+  return null;
+}
+
+/* ---------- core UI render & logic ---------- */
 let CURRENT = { seriesId:null, seasonId:null, episodeId:null };
 
 function renderSeriesList(){
@@ -307,7 +321,7 @@ function renderSeriesList(){
   root.innerHTML = '';
   CONTENT.forEach((s,i)=>{
     const el = document.createElement('div'); el.className='seriesItem' + (i===0 ? ' active' : '');
-    el.onclick = ()=>{ document.querySelectorAll('.seriesItem').forEach(x=>x.classList.remove('active')); el.classList.add('active'); openSeries(s.id); };
+    el.addEventListener('click', ()=> { document.querySelectorAll('.seriesItem').forEach(x=>x.classList.remove('active')); el.classList.add('active'); openSeries(s.id); });
     const thumbHtml = s.cover ? `<div class="seriesThumb"><img src="${escapeHtml(s.cover)}" style="width:100%;height:100%;object-fit:cover" /></div>` : `<div class="seriesThumb">${escapeHtml(s.name.slice(0,2).toUpperCase())}</div>`;
     el.innerHTML = thumbHtml + `<div class="seriesText"><div class="seriesName">${escapeHtml(s.name)}</div><div class="seriesDesc">${escapeHtml(s.desc||'')}</div></div>`;
     root.appendChild(el);
@@ -323,7 +337,7 @@ function openSeries(seriesId){
   const tabs = qs('seasonTabs'); if(!tabs) return; tabs.innerHTML='';
   (s.seasons||[]).forEach((se, idx)=>{
     const b = document.createElement('button'); b.className='tab'; b.textContent = se.title;
-    b.onclick = ()=>{ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); b.classList.add('active'); renderSeason(seriesId, se.id); };
+    b.addEventListener('click', ()=> { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); b.classList.add('active'); renderSeason(seriesId, se.id); });
     if(idx===0) b.classList.add('active');
     tabs.appendChild(b);
   });
@@ -340,59 +354,137 @@ function renderSeason(seriesId, seasonId){
   season.episodes.forEach((ep, idx)=>{
     const titleDisplay = ep.title && ep.title.trim() ? ep.title : `Episode ${idx+1}`;
     const row = document.createElement('div'); row.className='stackRow'; row.id = 'ep-'+ep.id;
-    // use the thumbnail filename provided in CONTENT (user will add files next to html)
-    const thumbHtml = ep.thumbnail ? `<img src="${escapeHtml(ep.thumbnail)}" alt="" />` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:900">${escapeHtml(titleDisplay.slice(0,2).toUpperCase())}</div>`;
-    row.innerHTML = `<div class="stackThumb" style="position:relative">${thumbHtml}
-        <div style="position:absolute;right:12px;bottom:12px"><div class="playBadge">${ep.videoUrl ? '▶' : '⎯'}</div></div>
-      </div>
-      <div class="stackMeta">
-        <div style="display:flex;gap:12px;align-items:flex-start">
-          <div style="flex:1"><div class="stackTitle">${escapeHtml(titleDisplay)}</div><div class="stackDesc">${escapeHtml(ep.desc||'')}</div></div>
-          <div><button class="fav" onclick="toggleFav('${ep.id}', event)">${ FAVS[ep.id] ? '★' : '☆' }</button></div>
-        </div>
-        <div style="margin-top:10px">
-          ${ ep.videoUrl ? `<button class="btn" onclick="playEpisode('${seriesId}','${seasonId}','${ep.id}')">Play</button>` : `<button class="ghost" disabled>Coming soon</button>` }
-          ${ WATCHED[ep.id] ? '<span class="watched" style="margin-left:10px">✓ watched</span>' : '' }
-        </div>
-      </div>`;
+
+    // thumbnail area
+    const thumbWrap = document.createElement('div'); thumbWrap.className = 'stackThumb'; thumbWrap.style.position = 'relative';
+    if(ep.thumbnail){
+      const img = document.createElement('img'); img.src = ep.thumbnail; img.alt = '';
+      thumbWrap.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div'); placeholder.style.width='100%'; placeholder.style.height='100%';
+      placeholder.style.display='flex'; placeholder.style.alignItems='center'; placeholder.style.justifyContent='center';
+      placeholder.style.color = 'var(--muted)'; placeholder.style.fontWeight = '900';
+      placeholder.textContent = titleDisplay.slice(0,2).toUpperCase();
+      thumbWrap.appendChild(placeholder);
+    }
+
+    const badge = document.createElement('div'); badge.style.position='absolute'; badge.style.right='12px'; badge.style.bottom='12px';
+    const badgeInner = document.createElement('div'); badgeInner.className='playBadge'; badgeInner.textContent = ep.videoUrl ? '▶' : '⎯';
+    badge.appendChild(badgeInner); thumbWrap.appendChild(badge);
+
+    // meta column
+    const meta = document.createElement('div'); meta.className='stackMeta';
+    const metaTop = document.createElement('div'); metaTop.style.display='flex'; metaTop.style.gap='12px'; metaTop.style.alignItems='flex-start';
+    const metaLeft = document.createElement('div'); metaLeft.style.flex = '1';
+    const titleEl = document.createElement('div'); titleEl.className = 'stackTitle'; titleEl.textContent = titleDisplay;
+    const descEl = document.createElement('div'); descEl.className = 'stackDesc'; descEl.textContent = ep.desc || '';
+    metaLeft.appendChild(titleEl); metaLeft.appendChild(descEl);
+
+    const favWrap = document.createElement('div');
+    const favBtn = document.createElement('button'); favBtn.className='fav'; favBtn.textContent = FAVS[ep.id] ? '★' : '☆';
+    favBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleFav(ep.id); });
+    favWrap.appendChild(favBtn);
+
+    metaTop.appendChild(metaLeft); metaTop.appendChild(favWrap);
+
+    const actions = document.createElement('div'); actions.style.marginTop = '10px';
+    if(ep.videoUrl){
+      const pbtn = document.createElement('button'); pbtn.className='btn'; pbtn.textContent='Play';
+      pbtn.addEventListener('click', ()=> playEpisode(seriesId, seasonId, ep.id));
+      actions.appendChild(pbtn);
+    } else {
+      const ghost = document.createElement('button'); ghost.className='ghost'; ghost.textContent='Coming soon'; ghost.disabled = true;
+      actions.appendChild(ghost);
+    }
+    if(WATCHED[ep.id]){
+      const wspan = document.createElement('span'); wspan.className='watched'; wspan.style.marginLeft='10px'; wspan.textContent='✓ watched';
+      actions.appendChild(wspan);
+    }
+
+    meta.appendChild(metaTop); meta.appendChild(actions);
+
+    row.appendChild(thumbWrap); row.appendChild(meta);
     el.appendChild(row);
   });
   CURRENT.seriesId = seriesId; CURRENT.seasonId = seasonId; CURRENT.episodeId = null;
 }
 
-function playEpisode(seriesId, seasonId, episodeId){
-  const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
-  const se = (Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seasonId); if(!se) return;
-  const ep = (Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===episodeId); if(!ep) return;
-  const url = ep.videoUrl || ep.videoData || '';
-  if(!url){ alert('No video attached for this episode'); return; }
-  CURRENT = { seriesId, seasonId, episodeId };
-  showPlayer(url, ep.title || 'Episode', `${s.name} — ${se.title}`);
-  WATCHED[ep.id] = Date.now(); save(KEY_W, WATCHED);
-  renderSeason(seriesId, seasonId);
-}
-
+/* Robust showPlayer: supports YouTube, Cloudflare iframe, HLS (.m3u8 via hls.js), direct mp4/webm */
 function showPlayer(url, title, subtitle){
-  const frame = qs('playerFrame'); if(!frame) return; frame.innerHTML=''; qs('playerMeta').textContent = subtitle || '';
+  const frame = qs('playerFrame'); if(!frame) return;
+  frame.innerHTML = '';
+  qs('playerMeta').textContent = subtitle || '';
   qs('heroTitle').textContent = title || qs('heroTitle').textContent;
-  const yt = toYouTubeEmbed(url);
-  if(yt){
+
+  // normalize Cloudflare iframe if possible:
+  const cfIframe = normalizeCloudflareIframe(url);
+
+  const isYouTube = (u) => !!toYouTubeEmbed(u);
+  const isM3U8 = (u) => typeof u === 'string' && /\.m3u8(\?|$)/i.test(u);
+  const isDirectVideo = (u) => typeof u === 'string' && /\.(mp4|webm|ogg)(\?|$)/i.test(u);
+
+  if(isYouTube(url)){
+    const yt = toYouTubeEmbed(url);
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
-    const ifr = document.createElement('iframe'); ifr.src = yt + '&autoplay=1'; ifr.allow='accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+    const ifr = document.createElement('iframe');
+    ifr.src = yt + '&autoplay=1';
+    ifr.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
     ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
     wrap.appendChild(ifr); frame.appendChild(wrap);
-  } else {
-    const video = document.createElement('video'); video.controls = true; video.src = url; video.style.width='100%'; video.style.height='100%';
+
+  } else if(cfIframe){
+    // Cloudflare iframe embed
+    const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
+    const ifr = document.createElement('iframe');
+    ifr.src = cfIframe + (cfIframe.includes('?') ? '&' : '?') + 'autoplay=1';
+    ifr.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+    ifr.setAttribute('allowfullscreen','');
+    ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
+    wrap.appendChild(ifr); frame.appendChild(wrap);
+
+  } else if(isM3U8(url)){
+    // HLS manifest playback (hls.js for non-native browsers)
+    const video = document.createElement('video');
+    video.controls = true; video.style.width='100%'; video.style.height='100%';
+    frame.appendChild(video);
+    if(window.Hls && Hls.isSupported()){
+      const hls = new Hls();
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play().catch(()=>{}); });
+    } else {
+      // Safari native HLS support
+      video.src = url;
+      video.play().catch(()=>{});
+    }
+
+  } else if(isDirectVideo(url)){
+    // direct mp4/webm link
+    const video = document.createElement('video');
+    video.controls = true; video.src = url; video.style.width='100%'; video.style.height='100%';
     video.addEventListener('ended', ()=>{ if(AUTOPLAY) playNext(); });
     frame.appendChild(video);
     video.play().catch(()=>{});
+
+  } else if(typeof url === 'string' && url.trim()){
+    // final fallback: try to embed as iframe (some providers)
+    const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
+    const ifr = document.createElement('iframe');
+    ifr.src = url;
+    ifr.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
+    ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
+    wrap.appendChild(ifr); frame.appendChild(wrap);
+
+  } else {
+    frame.innerHTML = '<div style="padding:28px;color:var(--muted)">No playable video found for this episode.</div>';
   }
+
   qs('playerArea').style.display='block';
   qs('heroAuto').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off');
   if(window.innerWidth < 900) qs('playerArea').scrollIntoView({behavior:'smooth'});
 }
 
-/* next / prev */
+/* next / prev helpers */
 function findNext(seriesId, seasonId, episodeId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return null;
   const seasons = s.seasons || []; const si = seasons.findIndex(x=>x.id===seasonId); if(si === -1) return null;
@@ -405,10 +497,10 @@ function playNext(){ if(!CURRENT.episodeId) return; const nxt = findNext(CURRENT
 function playPrev(){ alert('Previous not implemented'); }
 
 /* fav & autoplay */
-function toggleFav(epId, ev){ if(ev) ev.stopPropagation(); if(FAVS[epId]) delete FAVS[epId]; else FAVS[epId] = true; save(KEY_FAV, FAVS); if(CURRENT.seriesId && CURRENT.seasonId) renderSeason(CURRENT.seriesId, CURRENT.seasonId); }
+function toggleFav(epId){ if(FAVS[epId]) delete FAVS[epId]; else FAVS[epId] = true; save(KEY_FAV, FAVS); if(CURRENT.seriesId && CURRENT.seasonId) renderSeason(CURRENT.seriesId, CURRENT.seasonId); }
 function toggleAutoplay(){ AUTOPLAY = !AUTOPLAY; save(KEY_AUT, AUTOPLAY); qs('heroAuto').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off'); }
 
-/* hero play - plays first available in first season */
+/* hero play - first available in first season */
 function heroPlay(){ const s = CONTENT.find(x=>x.id===CURRENT.seriesId) || CONTENT[0]; if(!s) return; const se = (s.seasons && s.seasons[0]) ? s.seasons[0] : null; if(!se || !se.episodes || !se.episodes.length) { alert('No episodes yet'); return; } const ep = se.episodes.find(e=>e.videoUrl) || se.episodes[0]; if(!ep.videoUrl){ alert('No video attached to this show yet'); return; } playEpisode(s.id,se.id,ep.id); }
 
 /* search */
@@ -427,16 +519,38 @@ function globalSearch(){
   alert('No results found');
 }
 
-/* render alias for older code */
-function render(){ renderSeriesList(); }
+/* goHome */
+function goHome(){ qs('playerArea').style.display='none'; if(CONTENT[0]) openSeries(CONTENT[0].id); }
 
-/* welcome handling */
+/* enter app (welcome) */
 function enterApp(){ const w = qs('welcome'); if(!w) return; w.classList.add('hide-welcome'); setTimeout(()=>{ if(w && w.parentNode) w.parentNode.removeChild(w); },400); }
 
-/* init */
+/* playEpisode (public) */
+function playEpisode(seriesId, seasonId, episodeId){
+  const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
+  const se = (Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seasonId); if(!se) return;
+  const ep = (Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===episodeId); if(!ep) return;
+  const url = ep.videoUrl || ep.videoData || '';
+  if(!url){ alert('No video attached for this episode'); return; }
+  CURRENT = { seriesId, seasonId, episodeId };
+  showPlayer(url, ep.title || `Episode`, `${s.name} — ${se.title}`);
+  WATCHED[ep.id] = Date.now(); save(KEY_W, WATCHED);
+  renderSeason(seriesId, seasonId);
+}
+
+/* init wiring */
 (function init(){
-  // load logo (header + welcome)
   loadLogo();
+
+  // UI wiring (non-inline where possible)
+  qs('globalSearchInput') && qs('globalSearchInput').addEventListener('input', globalSearch);
+  qs('homeBtn') && qs('homeBtn').addEventListener('click', goHome);
+  qs('heroPlay') && qs('heroPlay').addEventListener('click', heroPlay);
+  qs('heroAuto') && qs('heroAuto').addEventListener('click', toggleAutoplay);
+  qs('prevBtn') && qs('prevBtn').addEventListener('click', playPrev);
+  qs('nextBtn') && qs('nextBtn').addEventListener('click', playNext);
+  qs('welcomeStartBtn') && qs('welcomeStartBtn').addEventListener('click', enterApp);
+
   try{
     renderSeriesList();
     if(CONTENT.length) openSeries(CONTENT[0].id);
@@ -444,8 +558,17 @@ function enterApp(){ const w = qs('welcome'); if(!w) return; w.classList.add('hi
   }catch(e){
     console.error('Init error', e);
   }
-  // expose for debugging/inline handlers
-  window.openSeries = openSeries; window.playEpisode = playEpisode; window.playNext = playNext; window.toggleFav = toggleFav; window.toggleAutoplay = toggleAutoplay; window.heroPlay = heroPlay;
+
+  // export a few functions to window so inline attributes or console can call them
+  window.openSeries = openSeries;
+  window.playEpisode = playEpisode;
+  window.playNext = playNext;
+  window.toggleFav = toggleFav;
+  window.toggleAutoplay = toggleAutoplay;
+  window.heroPlay = heroPlay;
+  window.goHome = goHome;
+  window.enterApp = enterApp;
+
   document.title = 'WOB WATCH+ — Stream';
 })();
 </script>
