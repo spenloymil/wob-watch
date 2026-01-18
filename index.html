@@ -19,7 +19,8 @@
     --card:#07261a;
     --muted:#9ec7b0;
     --maxw:1300px;
-    --radius:12px;
+    --radius:14px;
+    --card-radius:22px;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -36,11 +37,11 @@
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
     background: linear-gradient(180deg, #043b2b, #02261a);
-    color:white; flex-direction:column; gap:12px; text-align:center; padding:28px;
+    color:white; flex-direction:column; gap:14px; text-align:center; padding:28px;
   }
   #welcome .logoLarge{
-    width:110px;height:110px;border-radius:16px;
-    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px;
+    width:160px;height:160px;border-radius:16px;
+    display:flex;align-items:center;justify-content:center;font-weight:900;font-size:48px;
     background:linear-gradient(180deg,#055b3e,#044733);
     box-shadow:0 18px 60px rgba(0,0,0,.55);
     overflow:hidden;
@@ -72,7 +73,7 @@
   .layout { display:grid; grid-template-columns:260px 1fr; gap:22px; align-items:start; }
   @media (max-width:980px){ .layout { grid-template-columns:1fr; } .leftCol{ order:2 } .rightCol{ order:1 } }
 
-  /* left: series list */
+  /* left: series list (kept but minimal) */
   .leftCol { padding-top:6px; }
   .seriesList { display:flex; flex-direction:column; gap:10px; }
   .seriesItem{
@@ -86,7 +87,30 @@
   .seriesName{ font-weight:800; font-size:14px }
   .seriesDesc{ color:var(--muted); font-size:12px; margin-top:4px }
 
-  /* right: hero & player */
+  /* HOME GRID: portrait cards */
+  .homeGrid{ display:grid; gap:18px; margin-bottom:18px; }
+  .card {
+    background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.06));
+    border-radius:var(--card-radius);
+    overflow:hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    cursor:pointer;
+    display:flex; flex-direction:column;
+  }
+  /* portrait ratio via padding trick */
+  .cardImage{
+    position:relative; width:100%; padding-top:160%; /* portrait 10:16 ~ 62.5% -> 160% makes tall card like mock */
+    background:#777; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .cardImage img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block; }
+  .cardPlaceholder{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#222; font-weight:800; font-size:22px; background:#999; }
+  .cardFooter{
+    padding:14px; background:var(--accent); color:white; display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center;
+  }
+  .cardFooter .title{ font-family:'Anton', Impact, sans-serif; font-size:22px; letter-spacing:0.6px; }
+  .cardFooter .sub{ font-size:13px; color:rgba(255,255,255,0.9); }
+
+  /* right: hero & player (kept) */
   .hero {
     border-radius:14px; overflow:hidden; position:relative; margin-bottom:18px; min-height:220px;
     display:flex; align-items:center; gap:16px; padding:16px; border:1px solid rgba(255,255,255,0.02);
@@ -121,15 +145,23 @@
   .playerFrame{ width:100%; border-radius:10px; overflow:hidden; background:black; min-height:280px; display:flex; align-items:center; justify-content:center }
   .playerFrame iframe, .playerFrame video{ width:100%; height:100%; border:0; display:block }
 
-  /* badges */
-  .fav{ font-size:18px; cursor:pointer; color:#ffd166; background:rgba(0,0,0,0.12); padding:6px; border-radius:6px }
-  .watched{ background:#0d6b3f; color:white; padding:4px 8px; border-radius:999px; font-size:12px }
-
-  @media (max-width:980px){
-    .stackThumb{ width:100%; height:220px }
-    .stackRow{ flex-direction:column; align-items:center }
+  @media (min-width:1100px){
+    .homeGrid { grid-template-columns: repeat(3, 1fr); }
+    .cardImage { padding-top:160%; }
+  }
+  @media (max-width:1099px) and (min-width:700px){
+    .homeGrid { grid-template-columns: repeat(2, 1fr); }
+    .cardImage { padding-top:150%; }
+  }
+  @media (max-width:699px){
+    .layout { grid-template-columns:1fr; }
+    .homeGrid { grid-template-columns: 1fr; }
+    .cardImage { padding-top:120%; }
     .heroLeft{ width:140px }
     .heroCover{ height:110px }
+  }
+  @media (max-width:420px){
+    .cardFooter .title{ font-size:20px }
   }
 </style>
 </head>
@@ -171,8 +203,11 @@
 
     <!-- right column -->
     <div class="rightCol">
-      <!-- hero -->
-      <div id="hero" class="hero">
+      <!-- HOME GRID (shows first) -->
+      <div id="homeGrid" class="homeGrid" aria-live="polite"></div>
+
+      <!-- hero (hidden when home grid visible) -->
+      <div id="hero" class="hero" style="display:none">
         <div class="heroLeft"><div id="heroCover" class="heroCover">COVER</div></div>
         <div class="heroBody">
           <div id="heroTitle" class="heroTitle">Show title</div>
@@ -197,10 +232,10 @@
       </div>
 
       <!-- season tabs -->
-      <div id="seasonTabs" class="seasonTabs"></div>
+      <div id="seasonTabs" class="seasonTabs" style="display:none"></div>
 
       <!-- episodes list -->
-      <div id="episodesContainer">
+      <div id="episodesContainer" style="display:none">
         <div id="episodesList" class="stackList"></div>
       </div>
 
@@ -212,23 +247,15 @@
 
 <script>
 /* ==========================
-   Full, tested version:
-   - robust Cloudflare iframe detection (accepts playback id, watch URL, iframe URL)
-   - HLS manifest (.m3u8) playback via hls.js
-   - YouTube and direct mp4/webm fallback
-   - Welcome "Start Watching" working (inline fallback + JS wired)
-   - No ReferenceError: all functions defined before UI wiring
-   - S1E1 pre-filled with your Cloudflare playback ID (iframe)
+   Home-grid + mobile support
+   - Cards (portrait) on home screen
+   - Click card -> openSeries
+   - Removed starred (fav) buttons and watched tag display
+   - Existing playback (Cloudflare/HLS/YouTube/direct) kept intact
 */
 
 /* -------------------------
    CONTENT: edit only inside this block
-   Video URLs accept:
-   - Cloudflare iframe (https://iframe.videodelivery.net/PLAYBACK_ID)
-   - Cloudflare watch URL (/watch)
-   - Cloudflare HLS manifest (…/manifest/video.m3u8)
-   - direct mp4/webm
-   - YouTube URL
 */
 const CONTENT = [
   {
@@ -238,7 +265,6 @@ const CONTENT = [
     cover: 'BDRS1COVER.png',
     seasons: [
       { id:'s1', title:'Season 1', episodes:[
-          // s1e1 pre-filled with iframe form of your playback ID so you can test immediately
           { id:'s1e1', title:'', desc:'', thumbnail:'BDRS1E1COVER.png', videoUrl:'https://iframe.videodelivery.net/6d292286ad9b7d8c02b2bd2c7361f376' },
           { id:'s1e2', title:'', desc:'', thumbnail:'BDRS1E2COVER.png', videoUrl:'https://iframe.videodelivery.net/08cf9d1878f4cbfa7788082c0abbc2d9' },
           { id:'s1e3', title:'', desc:'', thumbnail:'BDRS1E3COVER.png', videoUrl:'https://iframe.videodelivery.net/09f91852097a7ffeeb01979bb751ac98' },
@@ -265,11 +291,9 @@ const CONTENT = [
 ];
 /* ========================== */
 
-const KEY_FAV = 'wob_favs_v1';
-const KEY_W = 'wob_watched_v1';
+/* removed starred/fav and watched persistence per request */
+
 const KEY_AUT = 'wob_autoplay_v1';
-let FAVS = JSON.parse(localStorage.getItem(KEY_FAV) || '{}');
-let WATCHED = JSON.parse(localStorage.getItem(KEY_W) || '{}');
 let AUTOPLAY = JSON.parse(localStorage.getItem(KEY_AUT) || 'false');
 
 function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
@@ -316,12 +340,71 @@ function normalizeCloudflareIframe(u){
 /* ---------- core UI render & logic ---------- */
 let CURRENT = { seriesId:null, seasonId:null, episodeId:null };
 
+/* Render home grid */
+function renderHomeGrid(){
+  const root = qs('homeGrid'); if(!root) return;
+  root.innerHTML = '';
+  CONTENT.forEach(s=>{
+    const card = document.createElement('div'); card.className='card';
+    card.addEventListener('click', ()=> { showSeriesFromCard(s.id); });
+
+    // image area
+    const imgWrap = document.createElement('div'); imgWrap.className='cardImage';
+    if(s.cover){
+      const img = document.createElement('img'); img.src = s.cover; img.alt = s.name;
+      img.onerror = ()=>{ img.style.display='none'; };
+      imgWrap.appendChild(img);
+    } else {
+      const ph = document.createElement('div'); ph.className='cardPlaceholder'; ph.textContent = 'IMAGE HERE';
+      imgWrap.appendChild(ph);
+    }
+
+    // footer band (green)
+    const footer = document.createElement('div'); footer.className='cardFooter';
+    const t = document.createElement('div'); t.className='title'; t.textContent = s.name || 'Untitled';
+    const sub = document.createElement('div'); sub.className='sub';
+    const seasonCount = (s.seasons && s.seasons.length) ? s.seasons.length : 0;
+    sub.textContent = seasonCount + (seasonCount === 1 ? ' Season' : ' Seasons');
+    footer.appendChild(t); footer.appendChild(sub);
+
+    card.appendChild(imgWrap); card.appendChild(footer);
+    root.appendChild(card);
+  });
+}
+
+/* show/hide home and series UI */
+function showHome(){
+  qs('homeGrid').style.display = 'grid';
+  qs('hero').style.display = 'none';
+  qs('seasonTabs').style.display = 'none';
+  qs('episodesContainer').style.display = 'none';
+  qs('playerArea').style.display = 'none';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function showSeriesFromCard(seriesId){
+  renderSeriesContent(seriesId);
+  qs('homeGrid').style.display = 'none';
+  qs('hero').style.display = 'flex';
+  qs('seasonTabs').style.display = 'flex';
+  qs('episodesContainer').style.display = 'block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* keep a small series list on left for quick nav */
 function renderSeriesList(){
   const root = qs('seriesList'); if(!root) return;
   root.innerHTML = '';
   CONTENT.forEach((s,i)=>{
     const el = document.createElement('div'); el.className='seriesItem' + (i===0 ? ' active' : '');
-    el.addEventListener('click', ()=> { document.querySelectorAll('.seriesItem').forEach(x=>x.classList.remove('active')); el.classList.add('active'); openSeries(s.id); });
+    el.addEventListener('click', ()=> {
+      document.querySelectorAll('.seriesItem').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      renderSeriesContent(s.id);
+      qs('homeGrid').style.display = 'none';
+      qs('hero').style.display = 'flex';
+      qs('seasonTabs').style.display = 'flex';
+      qs('episodesContainer').style.display = 'block';
+    });
     const thumbHtml = s.cover ? `<div class="seriesThumb"><img src="${escapeHtml(s.cover)}" style="width:100%;height:100%;object-fit:cover" /></div>` : `<div class="seriesThumb">${escapeHtml(s.name.slice(0,2).toUpperCase())}</div>`;
     el.innerHTML = thumbHtml + `<div class="seriesText"><div class="seriesName">${escapeHtml(s.name)}</div><div class="seriesDesc">${escapeHtml(s.desc||'')}</div></div>`;
     root.appendChild(el);
@@ -329,7 +412,8 @@ function renderSeriesList(){
   const sc = qs('seriesCount'); if(sc) sc.textContent = CONTENT.length + ' total';
 }
 
-function openSeries(seriesId){
+/* Render series content into hero/season/episodes (used when opening from card or list) */
+function renderSeriesContent(seriesId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
   qs('heroCover').innerHTML = s.cover ? `<img src="${escapeHtml(s.cover)}" style="width:100%;height:100%;object-fit:cover" />` : escapeHtml(s.name.slice(0,2).toUpperCase());
   qs('heroTitle').textContent = s.name;
@@ -342,10 +426,10 @@ function openSeries(seriesId){
     tabs.appendChild(b);
   });
   if(s.seasons && s.seasons[0]) renderSeason(seriesId, s.seasons[0].id);
-  qs('playerArea').style.display='none';
-  window.scrollTo({top:0, behavior:'smooth'});
+  CURRENT.seriesId = seriesId;
 }
 
+/* season + episodes rendering (no fav or watched tags) */
 function renderSeason(seriesId, seasonId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
   const season = (Array.isArray(s.seasons) ? s.seasons : []).find(x=>x.id===seasonId);
@@ -359,6 +443,7 @@ function renderSeason(seriesId, seasonId){
     const thumbWrap = document.createElement('div'); thumbWrap.className = 'stackThumb'; thumbWrap.style.position = 'relative';
     if(ep.thumbnail){
       const img = document.createElement('img'); img.src = ep.thumbnail; img.alt = '';
+      img.onerror = ()=>{ img.style.display='none'; };
       thumbWrap.appendChild(img);
     } else {
       const placeholder = document.createElement('div'); placeholder.style.width='100%'; placeholder.style.height='100%';
@@ -380,12 +465,7 @@ function renderSeason(seriesId, seasonId){
     const descEl = document.createElement('div'); descEl.className = 'stackDesc'; descEl.textContent = ep.desc || '';
     metaLeft.appendChild(titleEl); metaLeft.appendChild(descEl);
 
-    const favWrap = document.createElement('div');
-    const favBtn = document.createElement('button'); favBtn.className='fav'; favBtn.textContent = FAVS[ep.id] ? '★' : '☆';
-    favBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleFav(ep.id); });
-    favWrap.appendChild(favBtn);
-
-    metaTop.appendChild(metaLeft); metaTop.appendChild(favWrap);
+    metaTop.appendChild(metaLeft);
 
     const actions = document.createElement('div'); actions.style.marginTop = '10px';
     if(ep.videoUrl){
@@ -395,10 +475,6 @@ function renderSeason(seriesId, seasonId){
     } else {
       const ghost = document.createElement('button'); ghost.className='ghost'; ghost.textContent='Coming soon'; ghost.disabled = true;
       actions.appendChild(ghost);
-    }
-    if(WATCHED[ep.id]){
-      const wspan = document.createElement('span'); wspan.className='watched'; wspan.style.marginLeft='10px'; wspan.textContent='✓ watched';
-      actions.appendChild(wspan);
     }
 
     meta.appendChild(metaTop); meta.appendChild(actions);
@@ -423,17 +499,26 @@ function showPlayer(url, title, subtitle){
   const isM3U8 = (u) => typeof u === 'string' && /\.m3u8(\?|$)/i.test(u);
   const isDirectVideo = (u) => typeof u === 'string' && /\.(mp4|webm|ogg)(\?|$)/i.test(u);
 
+  // helper to attach autoplay->next on ended for HTML5 video elements
+  function attachEndedHandlerToVideo(videoEl){
+    if(!videoEl) return;
+    const onEnded = ()=>{ if(AUTOPLAY) { setTimeout(()=>{ try{ playNext(); }catch(e){} }, 300); } };
+    videoEl.removeEventListener('ended', onEnded);
+    videoEl.addEventListener('ended', onEnded);
+  }
+
   if(isYouTube(url)){
     const yt = toYouTubeEmbed(url);
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const ifr = document.createElement('iframe');
+    // add autoplay param where possible
     ifr.src = yt + '&autoplay=1';
     ifr.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
     ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
     wrap.appendChild(ifr); frame.appendChild(wrap);
 
   } else if(cfIframe){
-    // Cloudflare iframe embed
+    // Cloudflare iframe embed (autoplay param appended)
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const ifr = document.createElement('iframe');
     ifr.src = cfIframe + (cfIframe.includes('?') ? '&' : '?') + 'autoplay=1';
@@ -441,9 +526,9 @@ function showPlayer(url, title, subtitle){
     ifr.setAttribute('allowfullscreen','');
     ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
     wrap.appendChild(ifr); frame.appendChild(wrap);
+    // Note: parent cannot reliably detect "ended" for remote iframe players without provider postMessage API.
 
   } else if(isM3U8(url)){
-    // HLS manifest playback (hls.js for non-native browsers)
     const video = document.createElement('video');
     video.controls = true; video.style.width='100%'; video.style.height='100%';
     frame.appendChild(video);
@@ -452,22 +537,21 @@ function showPlayer(url, title, subtitle){
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play().catch(()=>{}); });
+      attachEndedHandlerToVideo(video);
     } else {
-      // Safari native HLS support
       video.src = url;
+      attachEndedHandlerToVideo(video);
       video.play().catch(()=>{});
     }
 
   } else if(isDirectVideo(url)){
-    // direct mp4/webm link
     const video = document.createElement('video');
     video.controls = true; video.src = url; video.style.width='100%'; video.style.height='100%';
-    video.addEventListener('ended', ()=>{ if(AUTOPLAY) playNext(); });
+    attachEndedHandlerToVideo(video);
     frame.appendChild(video);
     video.play().catch(()=>{});
 
   } else if(typeof url === 'string' && url.trim()){
-    // final fallback: try to embed as iframe (some providers)
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const ifr = document.createElement('iframe');
     ifr.src = url;
@@ -493,11 +577,18 @@ function findNext(seriesId, seasonId, episodeId){
   for(let j=si+1;j<seasons.length;j++){ const ns = seasons[j]; if(ns.episodes && ns.episodes.length) return { seriesId, seasonId: ns.id, episodeId: ns.episodes[0].id }; }
   return null;
 }
+function findPrev(seriesId, seasonId, episodeId){
+  const s = CONTENT.find(x=>x.id===seriesId); if(!s) return null;
+  const seasons = s.seasons || []; const si = seasons.findIndex(x=>x.id===seasonId); if(si === -1) return null;
+  const se = seasons[si]; const ei = se.episodes.findIndex(x=>x.id===episodeId); if(ei === -1) return null;
+  if(ei - 1 >= 0) return { seriesId, seasonId, episodeId: se.episodes[ei-1].id };
+  for(let j=si-1;j>=0;j--){ const ps = seasons[j]; if(ps.episodes && ps.episodes.length) return { seriesId, seasonId: ps.id, episodeId: ps.episodes[ps.episodes.length-1].id }; }
+  return null;
+}
 function playNext(){ if(!CURRENT.episodeId) return; const nxt = findNext(CURRENT.seriesId, CURRENT.seasonId, CURRENT.episodeId); if(nxt) playEpisode(nxt.seriesId, nxt.seasonId, nxt.episodeId); else alert('No next episode'); }
-function playPrev(){ alert('Previous not implemented'); }
+function playPrev(){ if(!CURRENT.episodeId) return; const prev = findPrev(CURRENT.seriesId, CURRENT.seasonId, CURRENT.episodeId); if(prev) playEpisode(prev.seriesId, prev.seasonId, prev.episodeId); else alert('No previous episode'); }
 
-/* fav & autoplay */
-function toggleFav(epId){ if(FAVS[epId]) delete FAVS[epId]; else FAVS[epId] = true; save(KEY_FAV, FAVS); if(CURRENT.seriesId && CURRENT.seasonId) renderSeason(CURRENT.seriesId, CURRENT.seasonId); }
+/* autoplay toggle */
 function toggleAutoplay(){ AUTOPLAY = !AUTOPLAY; save(KEY_AUT, AUTOPLAY); qs('heroAuto').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off'); }
 
 /* hero play - first available in first season */
@@ -506,13 +597,13 @@ function heroPlay(){ const s = CONTENT.find(x=>x.id===CURRENT.seriesId) || CONTE
 /* search */
 function globalSearch(){
   const q = (qs('globalSearchInput') && qs('globalSearchInput').value || '').trim().toLowerCase();
-  if(!q){ openSeries(CONTENT[0] && CONTENT[0].id); return; }
+  if(!q){ showHome(); return; }
   for(const s of CONTENT){
-    if((s.name||'').toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q)){ openSeries(s.id); return; }
+    if((s.name||'').toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
     for(const se of (s.seasons||[])){
-      if((se.title||'').toLowerCase().includes(q)){ openSeries(s.id); renderSeason(s.id,se.id); return; }
+      if((se.title||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); renderSeason(s.id,se.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
       for(const ep of (se.episodes||[])){
-        if((ep.title||'').toLowerCase().includes(q)){ openSeries(s.id); renderSeason(s.id,se.id); return; }
+        if((ep.title||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); renderSeason(s.id,se.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
       }
     }
   }
@@ -520,7 +611,7 @@ function globalSearch(){
 }
 
 /* goHome */
-function goHome(){ qs('playerArea').style.display='none'; if(CONTENT[0]) openSeries(CONTENT[0].id); }
+function goHome(){ showHome(); }
 
 /* enter app (welcome) */
 function enterApp(){ const w = qs('welcome'); if(!w) return; w.classList.add('hide-welcome'); setTimeout(()=>{ if(w && w.parentNode) w.parentNode.removeChild(w); },400); }
@@ -534,15 +625,22 @@ function playEpisode(seriesId, seasonId, episodeId){
   if(!url){ alert('No video attached for this episode'); return; }
   CURRENT = { seriesId, seasonId, episodeId };
   showPlayer(url, ep.title || `Episode`, `${s.name} — ${se.title}`);
-  WATCHED[ep.id] = Date.now(); save(KEY_W, WATCHED);
+  // removed watched tracking / UI per request
   renderSeason(seriesId, seasonId);
+}
+
+/* utility to return current HTML5 video element if present */
+function currentVideoElement(){
+  const frame = qs('playerFrame'); if(!frame) return null;
+  const vid = frame.querySelector('video');
+  return vid || null;
 }
 
 /* init wiring */
 (function init(){
   loadLogo();
 
-  // UI wiring (non-inline where possible)
+  // UI wiring
   qs('globalSearchInput') && qs('globalSearchInput').addEventListener('input', globalSearch);
   qs('homeBtn') && qs('homeBtn').addEventListener('click', goHome);
   qs('heroPlay') && qs('heroPlay').addEventListener('click', heroPlay);
@@ -553,21 +651,34 @@ function playEpisode(seriesId, seasonId, episodeId){
 
   try{
     renderSeriesList();
-    if(CONTENT.length) openSeries(CONTENT[0].id);
+    renderHomeGrid();
+    showHome();
     qs('heroAuto') && (qs('heroAuto').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off'));
   }catch(e){
     console.error('Init error', e);
   }
 
-  // export a few functions to window so inline attributes or console can call them
-  window.openSeries = openSeries;
+  // Spacebar toggles play/pause for the current visible <video> (ignore typing in inputs)
+  document.addEventListener('keydown', function(ev){
+    if(ev.code === 'Space' || ev.key === ' '){
+      const active = document.activeElement;
+      if(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+      const v = currentVideoElement();
+      if(v){
+        ev.preventDefault();
+        if(v.paused) v.play().catch(()=>{}); else v.pause();
+      }
+    }
+  });
+
+  // Expose a few functions to window so inline attributes or console can call them
+  window.openSeries = renderSeriesContent;
   window.playEpisode = playEpisode;
   window.playNext = playNext;
-  window.toggleFav = toggleFav;
-  window.toggleAutoplay = toggleAutoplay;
   window.heroPlay = heroPlay;
   window.goHome = goHome;
   window.enterApp = enterApp;
+  window.playPrev = playPrev;
 
   document.title = 'WOB WATCH+ — Stream';
 })();
