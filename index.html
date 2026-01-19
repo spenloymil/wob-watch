@@ -68,24 +68,10 @@
   .btn { background:var(--accent); color:white; border:0; padding:8px 12px; border-radius:10px; cursor:pointer; font-weight:700 }
   .ghost { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); padding:7px 10px; border-radius:8px }
 
-  /* ---------- Layout ---------- */
+  /* ---------- Layout (single column now) ---------- */
   main { max-width:var(--maxw); margin:18px auto; padding:0 18px 80px; }
-  .layout { display:grid; grid-template-columns:260px 1fr; gap:22px; align-items:start; }
-  @media (max-width:980px){ .layout { grid-template-columns:1fr; } .leftCol{ order:2 } .rightCol{ order:1 } }
-
-  /* left: series list (kept but minimal) */
-  .leftCol { padding-top:6px; }
-  .seriesList { display:flex; flex-direction:column; gap:10px; }
-  .seriesItem{
-    display:flex; gap:10px; align-items:center; padding:10px; border-radius:10px; cursor:pointer;
-    background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));
-    border:1px solid rgba(255,255,255,0.02);
-  }
-  .seriesItem.active { box-shadow: 0 10px 30px rgba(0,0,0,0.6); outline:2px solid var(--accent); }
-  .seriesThumb{ width:72px;height:48px;border-radius:8px;background:#092b20; display:flex;align-items:center;justify-content:center;color:var(--muted); font-weight:900; flex-shrink:0; overflow:hidden }
-  .seriesText{ display:flex; flex-direction:column }
-  .seriesName{ font-weight:800; font-size:14px }
-  .seriesDesc{ color:var(--muted); font-size:12px; margin-top:4px }
+  .layout { display:block; gap:22px; align-items:start; }
+  @media (max-width:980px){ .layout { display:block } }
 
   /* HOME GRID: portrait cards */
   .homeGrid{ display:grid; gap:18px; margin-bottom:18px; }
@@ -99,7 +85,7 @@
   }
   /* portrait ratio via padding trick */
   .cardImage{
-    position:relative; width:100%; padding-top:160%; /* portrait 10:16 ~ 62.5% -> 160% makes tall card like mock */
+    position:relative; width:100%; padding-top:160%; /* portrait */
     background:#777; display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
   .cardImage img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block; }
@@ -154,7 +140,6 @@
     .cardImage { padding-top:150%; }
   }
   @media (max-width:699px){
-    .layout { grid-template-columns:1fr; }
     .homeGrid { grid-template-columns: 1fr; }
     .cardImage { padding-top:120%; }
     .heroLeft{ width:140px }
@@ -195,51 +180,43 @@
 
 <main>
   <div class="layout">
-    <!-- left column -->
-    <div class="leftCol">
-      <div style="margin-bottom:12px"><strong style="font-weight:900">Series</strong></div>
-      <div id="seriesList" class="seriesList"></div>
-    </div>
+    <!-- MAIN CONTENT (no left column) -->
+    <!-- HOME GRID (shows first) -->
+    <div id="homeGrid" class="homeGrid" aria-live="polite"></div>
 
-    <!-- right column -->
-    <div class="rightCol">
-      <!-- HOME GRID (shows first) -->
-      <div id="homeGrid" class="homeGrid" aria-live="polite"></div>
-
-      <!-- hero (hidden when home grid visible) -->
-      <div id="hero" class="hero" style="display:none">
-        <div class="heroLeft"><div id="heroCover" class="heroCover">COVER</div></div>
-        <div class="heroBody">
-          <div id="heroTitle" class="heroTitle">Show title</div>
-          <div id="heroDesc" class="heroDesc">Show description</div>
-          <div class="heroActions">
-            <button class="btn" id="heroPlay">Play</button>
-            <button class="ghost" id="heroAuto">Autoplay: Off</button>
-          </div>
+    <!-- hero (hidden when home grid visible) -->
+    <div id="hero" class="hero" style="display:none">
+      <div class="heroLeft"><div id="heroCover" class="heroCover">COVER</div></div>
+      <div class="heroBody">
+        <div id="heroTitle" class="heroTitle">Show title</div>
+        <div id="heroDesc" class="heroDesc">Show description</div>
+        <div class="heroActions">
+          <button class="btn" id="heroPlay">Play</button>
+          <button class="ghost" id="heroAuto">Autoplay: Off</button>
         </div>
       </div>
+    </div>
 
-      <!-- player -->
-      <div id="playerArea" class="playerArea" style="display:none" aria-live="polite">
-        <div class="playerFrame" id="playerFrame"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-          <div id="playerMeta" style="color:var(--muted)"></div>
-          <div style="display:flex;gap:8px">
-            <button class="ghost" id="prevBtn">Prev</button>
-            <button class="ghost" id="nextBtn">Next</button>
-          </div>
+    <!-- player -->
+    <div id="playerArea" class="playerArea" style="display:none" aria-live="polite">
+      <div class="playerFrame" id="playerFrame"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+        <div id="playerMeta" style="color:var(--muted)"></div>
+        <div style="display:flex;gap:8px">
+          <button class="ghost" id="prevBtn">Prev</button>
+          <button class="ghost" id="nextBtn">Next</button>
         </div>
       </div>
-
-      <!-- season tabs -->
-      <div id="seasonTabs" class="seasonTabs" style="display:none"></div>
-
-      <!-- episodes list -->
-      <div id="episodesContainer" style="display:none">
-        <div id="episodesList" class="stackList"></div>
-      </div>
-
     </div>
+
+    <!-- season tabs -->
+    <div id="seasonTabs" class="seasonTabs" style="display:none"></div>
+
+    <!-- episodes list -->
+    <div id="episodesContainer" style="display:none">
+      <div id="episodesList" class="stackList"></div>
+    </div>
+
   </div>
 </main>
 
@@ -248,10 +225,11 @@
 <script>
 /* ==========================
    Home-grid + mobile support
-   - Cards (portrait) on home screen
-   - Click card -> openSeries
-   - Removed starred (fav) buttons and watched tag display
-   - Existing playback (Cloudflare/HLS/YouTube/direct) kept intact
+   - Cards (portrait) on home screen (use `cover`)
+   - Hero view uses `coverB` if present, otherwise falls back to `cover`
+   - Removed left-column small series list entirely
+   - Removed starred (fav) buttons and watched tag
+   - Playback (Cloudflare/HLS/YouTube/direct) preserved
 */
 
 /* -------------------------
@@ -262,7 +240,8 @@ const CONTENT = [
     id: 'bdr',
     name: "Bloxburg's Drag Race",
     desc: "Stream the original series on WOB WATCH+",
-    cover: 'BDRS1COVER.png',
+    cover: 'BDRCOVER.png',        // used on the home card (portrait)
+    coverB: 'BDRCOVER_B.png',    // used in the hero (landscape/short)
     seasons: [
       { id:'s1', title:'Season 1', episodes:[
           { id:'s1e1', title:'', desc:'', thumbnail:'BDRS1E1COVER.png', videoUrl:'https://iframe.videodelivery.net/6d292286ad9b7d8c02b2bd2c7361f376' },
@@ -290,8 +269,6 @@ const CONTENT = [
   }
 ];
 /* ========================== */
-
-/* removed starred/fav and watched persistence per request */
 
 const KEY_AUT = 'wob_autoplay_v1';
 let AUTOPLAY = JSON.parse(localStorage.getItem(KEY_AUT) || 'false');
@@ -348,7 +325,7 @@ function renderHomeGrid(){
     const card = document.createElement('div'); card.className='card';
     card.addEventListener('click', ()=> { showSeriesFromCard(s.id); });
 
-    // image area
+    // image area (uses s.cover)
     const imgWrap = document.createElement('div'); imgWrap.className='cardImage';
     if(s.cover){
       const img = document.createElement('img'); img.src = s.cover; img.alt = s.name;
@@ -390,32 +367,11 @@ function showSeriesFromCard(seriesId){
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-/* keep a small series list on left for quick nav */
-function renderSeriesList(){
-  const root = qs('seriesList'); if(!root) return;
-  root.innerHTML = '';
-  CONTENT.forEach((s,i)=>{
-    const el = document.createElement('div'); el.className='seriesItem' + (i===0 ? ' active' : '');
-    el.addEventListener('click', ()=> {
-      document.querySelectorAll('.seriesItem').forEach(x=>x.classList.remove('active'));
-      el.classList.add('active');
-      renderSeriesContent(s.id);
-      qs('homeGrid').style.display = 'none';
-      qs('hero').style.display = 'flex';
-      qs('seasonTabs').style.display = 'flex';
-      qs('episodesContainer').style.display = 'block';
-    });
-    const thumbHtml = s.cover ? `<div class="seriesThumb"><img src="${escapeHtml(s.cover)}" style="width:100%;height:100%;object-fit:cover" /></div>` : `<div class="seriesThumb">${escapeHtml(s.name.slice(0,2).toUpperCase())}</div>`;
-    el.innerHTML = thumbHtml + `<div class="seriesText"><div class="seriesName">${escapeHtml(s.name)}</div><div class="seriesDesc">${escapeHtml(s.desc||'')}</div></div>`;
-    root.appendChild(el);
-  });
-  const sc = qs('seriesCount'); if(sc) sc.textContent = CONTENT.length + ' total';
-}
-
-/* Render series content into hero/season/episodes (used when opening from card or list) */
+/* Render series content into hero/season/episodes (hero uses coverB if present) */
 function renderSeriesContent(seriesId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
-  qs('heroCover').innerHTML = s.cover ? `<img src="${escapeHtml(s.cover)}" style="width:100%;height:100%;object-fit:cover" />` : escapeHtml(s.name.slice(0,2).toUpperCase());
+  const heroImg = s.coverB || s.cover || '';
+  qs('heroCover').innerHTML = heroImg ? `<img src="${escapeHtml(heroImg)}" style="width:100%;height:100%;object-fit:cover" />` : escapeHtml(s.name.slice(0,2).toUpperCase());
   qs('heroTitle').textContent = s.name;
   qs('heroDesc').textContent = s.desc || '';
   const tabs = qs('seasonTabs'); if(!tabs) return; tabs.innerHTML='';
@@ -526,7 +482,6 @@ function showPlayer(url, title, subtitle){
     ifr.setAttribute('allowfullscreen','');
     ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
     wrap.appendChild(ifr); frame.appendChild(wrap);
-    // Note: parent cannot reliably detect "ended" for remote iframe players without provider postMessage API.
 
   } else if(isM3U8(url)){
     const video = document.createElement('video');
@@ -625,7 +580,6 @@ function playEpisode(seriesId, seasonId, episodeId){
   if(!url){ alert('No video attached for this episode'); return; }
   CURRENT = { seriesId, seasonId, episodeId };
   showPlayer(url, ep.title || `Episode`, `${s.name} — ${se.title}`);
-  // removed watched tracking / UI per request
   renderSeason(seriesId, seasonId);
 }
 
@@ -650,9 +604,10 @@ function currentVideoElement(){
   qs('welcomeStartBtn') && qs('welcomeStartBtn').addEventListener('click', enterApp);
 
   try{
-    renderSeriesList();
     renderHomeGrid();
     showHome();
+    // set header series count
+    const sc = qs('seriesCount'); if(sc) sc.textContent = CONTENT.length + ' total';
     qs('heroAuto') && (qs('heroAuto').textContent = 'Autoplay: ' + (AUTOPLAY ? 'On' : 'Off'));
   }catch(e){
     console.error('Init error', e);
