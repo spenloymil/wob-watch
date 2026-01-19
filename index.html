@@ -36,7 +36,7 @@
     -webkit-font-smoothing:antialiased;
   }
 
-  /* ===== Welcome (solid, non-transparent & matching tones) ===== */
+  /* ===== Welcome ===== */
   #welcome {
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
@@ -50,7 +50,7 @@
     box-shadow:0 18px 60px rgba(0,0,0,.55);
     overflow:hidden;
   }
-  #welcome .logoLarge img{ width:100%; height:100%; object-fit:contain; display:block; }
+  #welcome .logoLarge img{ width:100%; height:100%; object-fit:contain; display:block }
   #welcome h1{margin:0;font-size:28px}
   #welcome p{margin:0;color:rgba(255,255,255,0.95);max-width:740px}
   #welcome .startBtn{margin-top:8px;padding:12px 18px;border-radius:10px;background:white;color:var(--accent);font-weight:800;cursor:pointer;border:0}
@@ -65,7 +65,6 @@
   #logo { width:48px;height:48px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#fff }
   #logo img{ width:100%;height:100%;object-fit:cover;display:block }
   .brand { display:flex; flex-direction:column }
-  /* App name uses Anton */
   .brand .title{ font-family: 'Anton', Impact, Haettenschweiler, "Arial Black", sans-serif; color:var(--accent); font-weight:900; letter-spacing:0.6px; }
   .brand .sub{ color:var(--muted); font-size:12px }
   .header-actions{ margin-left:auto; display:flex; gap:12px; align-items:center }
@@ -73,10 +72,21 @@
   .btn:disabled { opacity:.5; cursor:not-allowed; }
   .ghost { background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); padding:7px 10px; border-radius:8px }
 
-  /* ---------- Layout (single column now) ---------- */
+  /* ---------- Layout ---------- */
   main { max-width:var(--maxw); margin:18px auto; padding:0 18px 80px; }
   .layout { display:block; gap:22px; align-items:start; }
-  @media (max-width:980px){ .layout { display:block } }
+
+  /* Search results block */
+  .searchResults {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border-radius:12px;
+    padding:12px;
+    margin-bottom:16px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.45);
+  }
+  .searchHeader { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .searchHeader .count { color:var(--muted); font-size:13px; margin-left:auto }
+  .resultsGrid { display:grid; gap:12px; grid-template-columns: repeat(auto-fit,minmax(210px,1fr)); }
 
   /* HOME GRID: portrait cards */
   .homeGrid{ display:grid; gap:18px; margin-bottom:18px; }
@@ -89,13 +99,13 @@
     display:flex; flex-direction:column;
     position:relative;
   }
-  /* portrait ratio via padding trick */
   .cardImage{
-    position:relative; width:100%; padding-top:160%; /* portrait */
+    position:relative; width:100%; padding-top:160%;
     background:#777; display:flex; align-items:center; justify-content:center; overflow:hidden;
   }
   .cardImage img{ position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover; display:block; }
   .cardPlaceholder{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#222; font-weight:800; font-size:22px; background:#999; }
+  .thumbPlaceholder{ display:flex; align-items:center; justify-content:center; color:#222; font-weight:900; background:#999; border-radius:8px; }
   .cardFooter{
     padding:14px; background:var(--accent); color:white; display:flex; flex-direction:column; gap:6px; align-items:center; text-align:center;
   }
@@ -159,7 +169,7 @@
     white-space:nowrap;
   }
 
-  /* right: hero & player (kept) */
+  /* right: hero & player */
   .hero {
     border-radius:14px; overflow:hidden; position:relative; margin-bottom:18px; min-height:220px;
     display:flex; align-items:center; gap:16px; padding:16px; border:1px solid rgba(255,255,255,0.02);
@@ -179,12 +189,43 @@
 
   /* stacked list */
   .stackList{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
-  .stackRow{ display:flex; gap:12px; align-items:flex-start; padding:10px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.02) }
+  .stackRow{ display:flex; gap:12px; align-items:flex-start; padding:10px; border-radius:10px; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.02); transition: box-shadow .18s ease; }
+  .stackRow.highlight{ box-shadow: 0 12px 32px rgba(0,77,41,0.18); transform: translateY(-4px); }
   .stackThumb{ width:280px; height:158px; background:#07261a; border-radius:8px; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:900; position:relative }
   .stackThumb img{ width:100%; height:100%; object-fit:cover; display:block }
   .stackMeta{ flex:1; display:flex; flex-direction:column; gap:8px }
   .stackTitle{ font-weight:800; font-size:16px; color:#e9fff4 }
   .stackDesc{ color:var(--muted); font-size:13px }
+
+  /* episode small badges */
+  .epBadge{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:var(--badge-bg);
+    color:var(--badge-fg);
+    font-weight:800;
+    font-size:11px;
+    padding:6px 8px;
+    border-radius:999px;
+    box-shadow:0 8px 18px rgba(0,0,0,0.36);
+    text-transform:uppercase;
+    z-index:6;
+    white-space:nowrap;
+  }
+  .epComing{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:rgba(255,255,255,0.08);
+    color:var(--muted);
+    font-weight:700;
+    font-size:11px;
+    padding:6px 8px;
+    border-radius:999px;
+    z-index:6;
+    white-space:nowrap;
+  }
 
   /* play badge */
   .playBadge{ background:var(--accent); width:38px; height:38px; border-radius:999px; display:flex; align-items:center; justify-content:center; color:white; font-weight:800; box-shadow:0 8px 18px rgba(0,77,41,0.16) }
@@ -193,6 +234,8 @@
   .playerArea{ margin-bottom:18px; border-radius:12px; background:#02130d; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,0.6) }
   .playerFrame{ width:100%; border-radius:10px; overflow:hidden; background:black; min-height:280px; display:flex; align-items:center; justify-content:center }
   .playerFrame iframe, .playerFrame video{ width:100%; height:100%; border:0; display:block }
+
+  .noResults { color:var(--muted); padding:18px; text-align:center }
 
   @media (min-width:1100px){
     .homeGrid { grid-template-columns: repeat(3, 1fr); }
@@ -207,6 +250,9 @@
     .cardImage { padding-top:120%; }
     .heroLeft{ width:140px }
     .heroCover{ height:110px }
+    /* mobile: stack episode rows vertically */
+    .stackRow{ flex-direction:column; align-items:stretch }
+    .stackThumb{ width:100%; height:190px }
   }
   @media (max-width:420px){
     .cardFooter .title{ font-size:20px }
@@ -223,7 +269,6 @@
   </div>
   <h1>Welcome to WOB WATCH+</h1>
   <p>Stream iconic series created or sponsored by World Of Bloxburg.</p>
-  <!-- Inline onclick as robust fallback -->
   <button class="startBtn" id="welcomeStartBtn" onclick="enterApp()">Start Watching</button>
 </div>
 
@@ -243,7 +288,16 @@
 
 <main>
   <div class="layout">
-    <!-- MAIN CONTENT (no left column) -->
+
+    <!-- SEARCH RESULTS (hidden unless searching) -->
+    <div id="searchResults" class="searchResults" style="display:none">
+      <div class="searchHeader">
+        <div><strong>Search results</strong></div>
+        <div class="count" id="searchCount">0 results</div>
+      </div>
+      <div id="resultsArea"></div>
+    </div>
+
     <!-- HOME GRID (shows first) -->
     <div id="homeGrid" class="homeGrid" aria-live="polite"></div>
 
@@ -255,7 +309,6 @@
         <div id="heroDesc" class="heroDesc">Show description</div>
         <div class="heroActions">
           <button class="btn" id="heroPlay">Play</button>
-          <!-- Autoplay button removed as requested -->
         </div>
       </div>
     </div>
@@ -265,7 +318,6 @@
       <div class="playerFrame" id="playerFrame"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
         <div id="playerMeta" style="color:var(--muted)"></div>
-        <!-- Prev/Next removed as requested -->
         <div style="display:flex;gap:8px"></div>
       </div>
     </div>
@@ -285,24 +337,27 @@
 
 <script>
 /* ==========================
-   Home-grid + mobile support + badge for specific show
-   + visibility controls for series, seasons, and episodes via `show` flags
-   Autoplay button and Prev/Next UI removed per request.
+   v1.1 updates:
+   - Better search results UI
+   - Image fallback safety
+   - Mobile layout fixes for episodes/hero
+   - Episode badges: 'new' and 'coming' support
+   - Prev/Next and Autoplay removed as requested
 */
 
 /* -------------------------
    CONTENT: edit only inside this block
-   - To hide a series, season, or episode set `show: false`
+   (season/episode titles & descriptions restored to your original)
 */
 const CONTENT = [
   {
     id: 'bdr',
     name: "Bloxburg's Drag Race",
-    desc: "Stream all of Season 1 on WOB WATCH+",
-    cover: 'BDRCOVER.png',        // used on the home card (portrait)
-    coverB: 'BDRCOVER_B.png',    // used in the hero (landscape/short)
-    badge: 'New Episodes Weekly', // badge text (centered on card)
-    show: true,                  // series-level visibility
+    desc: "Stream the original series on WOB WATCH+",
+    cover: 'BDRCOVER.png',
+    coverB: 'BDRCOVER_B.png',
+    badge: 'New Episodes Weekly',
+    show: true,
     seasons: [
       { id:'s1', title:'Season 1', show: true, episodes:[
           { id:'s1e1', title:'Episode 1 - Who Is She?', desc:'Meet our SICKENING cast of 6 in our Spectacular Premiere!', thumbnail:'BDRS1E1COVER.png', videoUrl:'https://iframe.videodelivery.net/6d292286ad9b7d8c02b2bd2c7361f376', show: true },
@@ -313,7 +368,7 @@ const CONTENT = [
           { id:'s1e6', title:'Episode 6 - The Grand Finale', desc:'The Top 3 is made into a Top 2, and a Winner is Crowned!', thumbnail:'BDRS1E6COVER.png', videoUrl:'https://iframe.videodelivery.net/034da72e1d1278b3b9df97349db0981f', show: true }
       ]},
       { id:'s2', title:'Season 2', show: true, episodes:[
-          { id:'s2e1', title:'Episode 1 - Rags To Riches', desc:'A brand new cast of 5 fierce queens enter the werk room, and are greeted by a ball!', thumbnail:'BDRS2E1COVER.png', videoUrl:'https://iframe.videodelivery.net/a9649e43d79a240d4a2a0138f0655238', show: true },
+          { id:'s2e1', title:'Episode 1 - Rags To Riches', desc:'A brand new cast of 5 fierce queens enter the werk room, and are greeted by a ball!', thumbnail:'BDRS2E1COVER.png', videoUrl:'https://iframe.videodelivery.net/a9649e43d79a240d4a2a0138f0655238', show: true, badge: 'NEW' },
           { id:'s2e2', title:'Episode 2 - The Traitors Tea', desc:'Episode releases on January 21st, 17:00 GMT', thumbnail:'BDRS2E2COVER.png', videoUrl:'', show: true }
       ]},
       { id:'s3', title:'Season 3', show: false, episodes:[
@@ -326,22 +381,52 @@ const CONTENT = [
     name:'Iconic Lip Syncs',
     desc:'Shorts and extras.',
     cover:'ICONICLIPSYNCSCOVER.png',
-    show: false, // entire series hidden from home/search by default
+    show: false,
     seasons:[
       { id:'ss1', title:'Season 1', show: true, episodes:[
-        { id:'ss1e1', title:'', desc:'', thumbnail:'WOBS1E1COVER.png', videoUrl:'', show: true }
+        { id:'ss1e1', title:'Short 1', desc:'A little clip', thumbnail:'WOBS1E1COVER.png', videoUrl:'', show: true }
       ]}
     ]
   }
 ];
 /* ========================== */
 
-/* helper storage function left in place (currently unused) */
-function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
-
 const qs = id => document.getElementById(id);
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
+/* small local helper to create an <img> with fallback to a placeholder
+   - images are positioned absolute so they won't push the wrapper taller
+*/
+function makeImgWithFallback(src, altText, placeholderText){
+  const img = document.createElement('img');
+  img.src = src || '';
+  img.alt = altText || '';
+  // ensure it fills any aspect-ratio wrapper safely
+  img.style.position = 'absolute';
+  img.style.top = '0';
+  img.style.left = '0';
+  img.style.width = '100%';
+  img.style.height = '100%';
+  img.style.objectFit = 'cover';
+  // fallback: hide broken image and inject placeholder element
+  img.onerror = function(){
+    img.style.display = 'none';
+    const parent = img.parentNode;
+    if(!parent) return;
+    // if placeholder already exists, skip
+    if(parent.querySelector('.cardPlaceholder') || parent.querySelector('.thumbPlaceholder')) return;
+    const ph = document.createElement('div');
+    // choose placeholder class based on container
+    ph.className = parent.classList.contains('cardImage') ? 'cardPlaceholder' : 'thumbPlaceholder';
+    ph.style.display = 'flex'; ph.style.alignItems = 'center'; ph.style.justifyContent = 'center';
+    ph.style.width = '100%'; ph.style.height = '100%';
+    ph.textContent = placeholderText || (altText||'').slice(0,2).toUpperCase();
+    parent.appendChild(ph);
+  };
+  return img;
+}
+
+/* load logo.png into header and welcome; fallback to letter */
 function loadLogo(){
   const headerImg = qs('logoImg'), headerLetter = qs('logoLetter');
   const welcomeImg = qs('welcomeLogo'), welcomeLetter = qs('welcomeLetter');
@@ -357,34 +442,11 @@ function loadLogo(){
   }
 }
 
-/* YouTube helper */
-function toYouTubeEmbed(url){
-  if(!url || typeof url !== 'string') return null;
-  try{
-    const m = url.match(/(?:youtube\.com\/(?:.*v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
-    if(m && m[1]) return 'https://www.youtube.com/embed/' + m[1] + '?rel=0';
-    try{ const u = new URL(url); const v = u.searchParams.get('v'); if(v) return 'https://www.youtube.com/embed/' + v + '?rel=0'; }catch(e){}
-    return null;
-  }catch(e){ return null; }
-}
-
-/* Normalize Cloudflare inputs (playback id, watch URL, iframe url) -> iframe.videodelivery.net/ID */
-function normalizeCloudflareIframe(u){
-  if(!u || typeof u !== 'string') return null;
-  if(u.includes('iframe.videodelivery.net')) return u;
-  // match 32 hex-char playback id
-  const idMatch = u.match(/([a-f0-9]{32})/i);
-  if(idMatch && idMatch[1]) return 'https://iframe.videodelivery.net/' + idMatch[1];
-  return null;
-}
-
 /* ---------- core UI render & logic ---------- */
 let CURRENT = { seriesId:null, seasonId:null, episodeId:null };
 
-/* utility: return visible series list */
-function visibleSeriesList(){
-  return Array.isArray(CONTENT) ? CONTENT.filter(s => s.show !== false) : [];
-}
+/* visible series helper */
+function visibleSeriesList(){ return Array.isArray(CONTENT) ? CONTENT.filter(s => s.show !== false) : []; }
 
 /* Render home grid (only visible series) */
 function renderHomeGrid(){
@@ -395,18 +457,17 @@ function renderHomeGrid(){
     const card = document.createElement('div'); card.className='card';
     card.addEventListener('click', ()=> { showSeriesFromCard(s.id); });
 
-    // image area (uses s.cover)
+    // image area
     const imgWrap = document.createElement('div'); imgWrap.className='cardImage';
     if(s.cover){
-      const img = document.createElement('img'); img.src = s.cover; img.alt = s.name;
-      img.onerror = ()=>{ img.style.display='none'; };
+      const img = makeImgWithFallback(s.cover, s.name, (s.name||'').slice(0,2).toUpperCase());
       imgWrap.appendChild(img);
     } else {
-      const ph = document.createElement('div'); ph.className='cardPlaceholder'; ph.textContent = 'IMAGE HERE';
+      const ph = document.createElement('div'); ph.className='cardPlaceholder'; ph.textContent = (s.name||'').slice(0,2).toUpperCase();
       imgWrap.appendChild(ph);
     }
 
-    // badge on the card (if set) - centered
+    // badge on the card (centered)
     if(s.badge){
       const b = document.createElement('div');
       b.className = 'showBadge';
@@ -429,8 +490,134 @@ function renderHomeGrid(){
   });
 }
 
+/* ========= Search results UI ========= */
+function renderSearchResults(query){
+  const resultsArea = qs('resultsArea');
+  const resultsWrapper = qs('searchResults');
+  if(!resultsArea || !resultsWrapper) return;
+  const q = (query||'').trim().toLowerCase();
+  if(!q){ resultsWrapper.style.display = 'none'; return; }
+
+  // hide other large UI elements while searching
+  qs('homeGrid').style.display = 'none';
+  qs('hero').style.display = 'none';
+  qs('seasonTabs').style.display = 'none';
+  qs('episodesContainer').style.display = 'none';
+  qs('playerArea').style.display = 'none';
+
+  resultsWrapper.style.display = 'block';
+  resultsArea.innerHTML = '';
+
+  const seriesMatches = visibleSeriesList().filter(s=> (s.name||'').toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q));
+  const episodeMatches = [];
+
+  // search episodes across visible seasons & visible series
+  for(const s of visibleSeriesList()){
+    const seasons = Array.isArray(s.seasons) ? s.seasons.filter(se=> se.show !== false) : [];
+    for(const se of seasons){
+      for(const ep of (Array.isArray(se.episodes) ? se.episodes : [])){
+        if(ep.show === false) continue;
+        const hay = ((ep.title||'') + ' ' + (ep.desc||'')).toLowerCase();
+        if(hay.includes(q)){
+          episodeMatches.push({ series: s, season: se, episode: ep });
+        }
+      }
+    }
+  }
+
+  const total = seriesMatches.length + episodeMatches.length;
+  const countEl = qs('searchCount'); if(countEl) countEl.textContent = total + ' result' + (total===1?'':'s');
+
+  // series results (grid)
+  if(seriesMatches.length){
+    const sTitle = document.createElement('div'); sTitle.style.fontWeight='800'; sTitle.style.margin='6px 0'; sTitle.textContent = 'Series';
+    resultsArea.appendChild(sTitle);
+    const grid = document.createElement('div'); grid.className = 'resultsGrid';
+    seriesMatches.forEach(s=>{
+      const mini = document.createElement('div'); mini.style.cursor='pointer';
+      mini.style.borderRadius='12px'; mini.style.overflow='hidden'; mini.style.background='linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))';
+      mini.style.padding='8px';
+      mini.addEventListener('click', ()=>{ renderSeriesContent(s.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); });
+      const imgWrap = document.createElement('div'); imgWrap.style.width='100%'; imgWrap.style.paddingTop='60%'; imgWrap.style.position='relative'; imgWrap.style.marginBottom='10px'; imgWrap.style.overflow='hidden'; imgWrap.style.borderRadius='8px';
+      if(s.cover){
+        const img = makeImgWithFallback(s.cover, s.name, (s.name||'').slice(0,2).toUpperCase());
+        // ensure the image sits absolutely inside the preview box (prevents layout blowout)
+        img.style.position = 'absolute';
+        img.style.top = '0';
+        img.style.left = '0';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        imgWrap.appendChild(img);
+      } else {
+        const ph = document.createElement('div'); ph.className='thumbPlaceholder'; ph.textContent = (s.name||'').slice(0,2).toUpperCase(); ph.style.height='100%';
+        imgWrap.appendChild(ph);
+      }
+      const title = document.createElement('div'); title.style.fontWeight='800'; title.style.marginBottom='4px'; title.textContent = s.name;
+      const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='13px'; sub.textContent = s.desc || '';
+      mini.appendChild(imgWrap); mini.appendChild(title); mini.appendChild(sub);
+      grid.appendChild(mini);
+    });
+    resultsArea.appendChild(grid);
+  }
+
+  // episode results (stack)
+  if(episodeMatches.length){
+    const eTitle = document.createElement('div'); eTitle.style.fontWeight='800'; eTitle.style.margin='12px 0 6px'; eTitle.textContent = 'Episodes';
+    resultsArea.appendChild(eTitle);
+    const list = document.createElement('div');
+    episodeMatches.forEach(rec=>{
+      const box = document.createElement('div'); box.style.display='flex'; box.style.gap='12px'; box.style.alignItems='center'; box.style.padding='8px 6px'; box.style.borderBottom='1px solid rgba(255,255,255,0.02)';
+      box.style.cursor='pointer';
+      box.addEventListener('click', ()=>{
+        // open the series and season, then highlight the episode row
+        renderSeriesContent(rec.series.id);
+        qs('homeGrid').style.display = 'none';
+        qs('hero').style.display = 'flex';
+        qs('seasonTabs').style.display = 'flex';
+        qs('episodesContainer').style.display = 'block';
+        // ensure tabs and season rendered
+        setTimeout(()=>{
+          renderSeason(rec.series.id, rec.season.id);
+          const row = qs('ep-'+rec.episode.id);
+          if(row){
+            row.classList.add('highlight');
+            row.scrollIntoView({behavior:'smooth', block:'center'});
+            setTimeout(()=> row.classList.remove('highlight'), 2500);
+          }
+        }, 60);
+      });
+
+      const th = document.createElement('div'); th.style.width='96px'; th.style.height='56px'; th.style.flex='0 0 96px'; th.style.position='relative'; th.style.overflow='hidden'; th.style.borderRadius='6px';
+      if(rec.episode.thumbnail){
+        const img = makeImgWithFallback(rec.episode.thumbnail, rec.episode.title || '', (rec.episode.title||'').slice(0,2).toUpperCase());
+        img.style.width='100%'; img.style.height='100%'; img.style.objectFit='cover';
+        // absolute positioning already set in helper
+        th.appendChild(img);
+      } else {
+        const ph = document.createElement('div'); ph.className='thumbPlaceholder'; ph.textContent = (rec.episode.title||'').slice(0,2).toUpperCase();
+        ph.style.width='96px'; ph.style.height='56px';
+        th.appendChild(ph);
+      }
+
+      const meta = document.createElement('div'); meta.style.flex='1';
+      const t = document.createElement('div'); t.style.fontWeight='800'; t.textContent = rec.episode.title || 'Episode';
+      const s = document.createElement('div'); s.style.color='var(--muted)'; s.style.fontSize='13px'; s.textContent = rec.series.name + ' — ' + rec.season.title;
+      meta.appendChild(t); meta.appendChild(s);
+      box.appendChild(th); box.appendChild(meta);
+      list.appendChild(box);
+    });
+    resultsArea.appendChild(list);
+  }
+
+  if(total === 0){
+    resultsArea.innerHTML = '<div class="noResults">No results found</div>';
+  }
+}
+
 /* show/hide home and series UI */
 function showHome(){
+  qs('searchResults').style.display = 'none';
   qs('homeGrid').style.display = 'grid';
   qs('hero').style.display = 'none';
   qs('seasonTabs').style.display = 'none';
@@ -447,21 +634,23 @@ function showSeriesFromCard(seriesId){
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-/* Render series content into hero/season/episodes (hero uses coverB if present)
-   Only seasons with `show !== false` are shown.
-*/
+/* Render series content into hero/season/episodes */
 function renderSeriesContent(seriesId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
   const heroImg = s.coverB || s.cover || '';
 
-  // set hero image (or fallback text)
+  // set hero image (with fallback)
+  qs('heroCover').innerHTML = '';
   if(heroImg){
-    qs('heroCover').innerHTML = `<img src="${escapeHtml(heroImg)}" alt="${escapeHtml(s.name)} cover" />`;
+    const wrapper = qs('heroCover');
+    const img = makeImgWithFallback(heroImg, s.name, (s.name||'').slice(0,2).toUpperCase());
+    img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover';
+    wrapper.appendChild(img);
   } else {
-    qs('heroCover').innerHTML = escapeHtml(s.name.slice(0,2).toUpperCase());
+    qs('heroCover').textContent = (s.name||'').slice(0,2).toUpperCase();
   }
 
-  // remove previous badges
+  // remove previous badges/status
   const existingBadge = qs('heroCover').querySelector('.heroBadge');
   if(existingBadge) existingBadge.remove();
   const existingStatus = qs('heroCover').querySelector('.heroStatusBadge');
@@ -488,22 +677,18 @@ function renderSeriesContent(seriesId){
   qs('heroTitle').textContent = s.name;
   qs('heroDesc').textContent = s.desc || '';
 
-  // compute visible seasons (only seasons where show !== false)
   const visibleSeasons = (Array.isArray(s.seasons) ? s.seasons.filter(se=> se.show !== false) : []);
   const tabs = qs('seasonTabs'); if(!tabs) return; tabs.innerHTML='';
 
-  // If series-level hide, don't allow tabs/play even if seasons visible (you might want that, but defaulting to block)
   if(s.show === false){
     qs('seasonTabs').style.display = 'none';
     qs('episodesContainer').style.display = 'none';
     qs('heroPlay').disabled = true;
   } else if(visibleSeasons.length === 0){
-    // no visible seasons published yet — hide tabs & episode list, disable play
     qs('seasonTabs').style.display = 'none';
     qs('episodesContainer').style.display = 'none';
     qs('heroPlay').disabled = true;
   } else {
-    // render tabs for visible seasons
     visibleSeasons.forEach((se, idx)=>{
       const b = document.createElement('button'); b.className='tab'; b.textContent = se.title;
       b.addEventListener('click', ()=> { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); b.classList.add('active'); renderSeason(seriesId, se.id); });
@@ -513,26 +698,20 @@ function renderSeriesContent(seriesId){
     qs('seasonTabs').style.display = 'flex';
     qs('episodesContainer').style.display = 'block';
     qs('heroPlay').disabled = false;
-    // render first visible season by default
     renderSeason(seriesId, visibleSeasons[0].id);
   }
 
   CURRENT.seriesId = seriesId;
 }
 
-/* season + episodes rendering (only visible seasons & visible episodes)
-   If a season/episode is marked show: false it will not be rendered anywhere.
-*/
+/* season + episodes rendering */
 function renderSeason(seriesId, seasonId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
-  // find season only among visible ones (and also check season.show)
   const season = (Array.isArray(s.seasons) ? s.seasons.find(x=>x.id===seasonId && x.show !== false) : null);
   const el = qs('episodesList'); if(!el) return; el.innerHTML = '';
   if(!season){ el.innerHTML = '<div style="color:var(--muted)">No episodes</div>'; return; }
 
-  // filter episodes by show flag
   const visibleEpisodes = Array.isArray(season.episodes) ? season.episodes.filter(ep => ep.show !== false) : [];
-
   if(visibleEpisodes.length === 0){
     el.innerHTML = '<div style="color:var(--muted)">No published episodes in this season</div>';
     CURRENT.seriesId = seriesId; CURRENT.seasonId = seasonId; CURRENT.episodeId = null;
@@ -546,15 +725,20 @@ function renderSeason(seriesId, seasonId){
     // thumbnail area
     const thumbWrap = document.createElement('div'); thumbWrap.className = 'stackThumb'; thumbWrap.style.position = 'relative';
     if(ep.thumbnail){
-      const img = document.createElement('img'); img.src = ep.thumbnail; img.alt = '';
-      img.onerror = ()=>{ img.style.display='none'; };
+      const img = makeImgWithFallback(ep.thumbnail, titleDisplay, titleDisplay.slice(0,2).toUpperCase());
       thumbWrap.appendChild(img);
     } else {
-      const placeholder = document.createElement('div'); placeholder.style.width='100%'; placeholder.style.height='100%';
-      placeholder.style.display='flex'; placeholder.style.alignItems='center'; placeholder.style.justifyContent='center';
-      placeholder.style.color = 'var(--muted)'; placeholder.style.fontWeight = '900';
-      placeholder.textContent = titleDisplay.slice(0,2).toUpperCase();
+      const placeholder = document.createElement('div'); placeholder.className='cardPlaceholder'; placeholder.textContent = titleDisplay.slice(0,2).toUpperCase();
       thumbWrap.appendChild(placeholder);
+    }
+
+    // episode-level badge: 'new' or 'coming'
+    // NORMALIZE badge string (case-insensitive)
+    const badgeVal = (ep.badge || '').toString().trim().toLowerCase();
+    if(badgeVal === 'new'){
+      const eb = document.createElement('div'); eb.className = 'epBadge'; eb.textContent = 'NEW'; thumbWrap.appendChild(eb);
+    } else if(badgeVal === 'coming' || !ep.videoUrl){
+      const ec = document.createElement('div'); ec.className = 'epComing'; ec.textContent = 'Coming soon'; thumbWrap.appendChild(ec);
     }
 
     const badge = document.createElement('div'); badge.style.position='absolute'; badge.style.right='12px'; badge.style.bottom='12px';
@@ -572,7 +756,7 @@ function renderSeason(seriesId, seasonId){
     metaTop.appendChild(metaLeft);
 
     const actions = document.createElement('div'); actions.style.marginTop = '10px';
-    if(ep.videoUrl){
+    if(ep.videoUrl && badgeVal !== 'coming'){
       const pbtn = document.createElement('button'); pbtn.className='btn'; pbtn.textContent='Play';
       pbtn.addEventListener('click', ()=> playEpisode(seriesId, seasonId, ep.id));
       actions.appendChild(pbtn);
@@ -586,6 +770,7 @@ function renderSeason(seriesId, seasonId){
     row.appendChild(thumbWrap); row.appendChild(meta);
     el.appendChild(row);
   });
+
   CURRENT.seriesId = seriesId; CURRENT.seasonId = seasonId; CURRENT.episodeId = null;
 }
 
@@ -596,33 +781,21 @@ function showPlayer(url, title, subtitle){
   qs('playerMeta').textContent = subtitle || '';
   qs('heroTitle').textContent = title || qs('heroTitle').textContent;
 
-  // normalize Cloudflare iframe if possible:
   const cfIframe = normalizeCloudflareIframe(url);
-
   const isYouTube = (u) => !!toYouTubeEmbed(u);
   const isM3U8 = (u) => typeof u === 'string' && /\.m3u8(\?|$)/i.test(u);
   const isDirectVideo = (u) => typeof u === 'string' && /\.(mp4|webm|ogg)(\?|$)/i.test(u);
-
-  // helper to attach autoplay->next on ended for HTML5 video elements
-  function attachEndedHandlerToVideo(videoEl){
-    if(!videoEl) return;
-    const onEnded = ()=>{ /* left intentionally blank for now (autoplay removed) */ };
-    videoEl.removeEventListener('ended', onEnded);
-    videoEl.addEventListener('ended', onEnded);
-  }
 
   if(isYouTube(url)){
     const yt = toYouTubeEmbed(url);
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const ifr = document.createElement('iframe');
-    // add autoplay param where possible
     ifr.src = yt + '&autoplay=1';
     ifr.allow = 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture';
     ifr.style.position='absolute'; ifr.style.top='0'; ifr.style.left='0'; ifr.style.width='100%'; ifr.style.height='100%'; ifr.style.border='0';
     wrap.appendChild(ifr); frame.appendChild(wrap);
 
   } else if(cfIframe){
-    // Cloudflare iframe embed (autoplay param appended)
     const wrap = document.createElement('div'); wrap.style.position='relative'; wrap.style.width='100%'; wrap.style.paddingTop='56.25%';
     const ifr = document.createElement('iframe');
     ifr.src = cfIframe + (cfIframe.includes('?') ? '&' : '?') + 'autoplay=1';
@@ -640,17 +813,14 @@ function showPlayer(url, title, subtitle){
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, function() { video.play().catch(()=>{}); });
-      attachEndedHandlerToVideo(video);
     } else {
       video.src = url;
-      attachEndedHandlerToVideo(video);
       video.play().catch(()=>{});
     }
 
   } else if(isDirectVideo(url)){
     const video = document.createElement('video');
     video.controls = true; video.src = url; video.style.width='100%'; video.style.height='100%';
-    attachEndedHandlerToVideo(video);
     frame.appendChild(video);
     video.play().catch(()=>{});
 
@@ -670,7 +840,7 @@ function showPlayer(url, title, subtitle){
   if(window.innerWidth < 900) qs('playerArea').scrollIntoView({behavior:'smooth'});
 }
 
-/* next / prev helpers (kept for future use) */
+/* next / prev helpers (kept for possible future use) */
 function findNext(seriesId, seasonId, episodeId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return null;
   const seasons = s.seasons || []; const si = seasons.findIndex(x=>x.id===seasonId); if(si === -1) return null;
@@ -697,7 +867,7 @@ function heroPlay(){
   const visibleSeasons = (Array.isArray(s.seasons) ? s.seasons.filter(se=>se.show !== false) : []);
   if(!visibleSeasons.length) { alert('No episodes yet'); return; }
   const se = visibleSeasons[0];
-  const visibleEpisodes = Array.isArray(se.episodes) ? se.episodes.filter(ep => ep.show !== false) : [];
+  const visibleEpisodes = Array.isArray(se.episodes) ? se.episodes.filter(ep => ep.show !== false && ( (ep.badge||'').toString().trim().toLowerCase() !== 'coming')) : [];
   if(!visibleEpisodes.length) { alert('No published episodes in this season'); return; }
   const ep = visibleEpisodes.find(e=>e.videoUrl) || visibleEpisodes[0];
   if(!ep.videoUrl){ alert('No video attached to this show yet'); return; }
@@ -706,21 +876,9 @@ function heroPlay(){
 
 /* search (skips hidden content) */
 function globalSearch(){
-  const q = (qs('globalSearchInput') && qs('globalSearchInput').value || '').trim().toLowerCase();
+  const q = (qs('globalSearchInput') && qs('globalSearchInput').value || '').trim();
   if(!q){ showHome(); return; }
-  for(const s of CONTENT){
-    if(s.show === false) continue; // skip hidden series
-    if((s.name||'').toLowerCase().includes(q) || (s.desc||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
-    for(const se of (s.seasons||[])){
-      if(se.show === false) continue; // skip hidden seasons
-      if((se.title||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); renderSeason(s.id,se.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
-      for(const ep of (se.episodes||[])){
-        if(ep.show === false) continue; // skip hidden episodes
-        if((ep.title||'').toLowerCase().includes(q)){ renderSeriesContent(s.id); renderSeason(s.id,se.id); qs('homeGrid').style.display='none'; qs('hero').style.display='flex'; qs('seasonTabs').style.display='flex'; qs('episodesContainer').style.display='block'; return; }
-      }
-    }
-  }
-  alert('No results found');
+  renderSearchResults(q);
 }
 
 /* goHome */
@@ -734,6 +892,7 @@ function playEpisode(seriesId, seasonId, episodeId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s || s.show === false) { alert('This series is unpublished'); return; }
   const se = (Array.isArray(s.seasons)?s.seasons:[]).find(x=>x.id===seasonId && x.show !== false); if(!se) return;
   const ep = (Array.isArray(se.episodes)?se.episodes:[]).find(x=>x.id===episodeId && x.show !== false); if(!ep) return;
+  if((ep.badge||'').toString().trim().toLowerCase() === 'coming' || !ep.videoUrl){ alert('This episode is not available yet'); return; }
   const url = ep.videoUrl || ep.videoData || '';
   if(!url){ alert('No video attached for this episode'); return; }
   CURRENT = { seriesId, seasonId, episodeId };
@@ -741,18 +900,35 @@ function playEpisode(seriesId, seasonId, episodeId){
   renderSeason(seriesId, seasonId);
 }
 
-/* utility to return current HTML5 video element if present */
+/* small utility to get HTML5 video if present */
 function currentVideoElement(){
   const frame = qs('playerFrame'); if(!frame) return null;
   const vid = frame.querySelector('video');
   return vid || null;
 }
 
+/* helper functions used by player/search */
+function toYouTubeEmbed(url){
+  if(!url || typeof url !== 'string') return null;
+  try{
+    const m = url.match(/(?:youtube\.com\/(?:.*v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    if(m && m[1]) return 'https://www.youtube.com/embed/' + m[1] + '?rel=0';
+    try{ const u = new URL(url); const v = u.searchParams.get('v'); if(v) return 'https://www.youtube.com/embed/' + v + '?rel=0'; }catch(e){}
+    return null;
+  }catch(e){ return null; }
+}
+function normalizeCloudflareIframe(u){
+  if(!u || typeof u !== 'string') return null;
+  if(u.includes('iframe.videodelivery.net')) return u;
+  const idMatch = u.match(/([a-f0-9]{32})/i);
+  if(idMatch && idMatch[1]) return 'https://iframe.videodelivery.net/' + idMatch[1];
+  return null;
+}
+
 /* init wiring */
 (function init(){
   loadLogo();
 
-  // UI wiring
   qs('globalSearchInput') && qs('globalSearchInput').addEventListener('input', globalSearch);
   qs('homeBtn') && qs('homeBtn').addEventListener('click', goHome);
   qs('heroPlay') && qs('heroPlay').addEventListener('click', heroPlay);
@@ -761,7 +937,7 @@ function currentVideoElement(){
   try{
     renderHomeGrid();
     showHome();
-    // set header series count (visible only)
+    // header series count (visible only)
     const sc = qs('seriesCount'); if(sc) sc.textContent = visibleSeriesList().length + ' total';
   }catch(e){
     console.error('Init error', e);
@@ -780,7 +956,7 @@ function currentVideoElement(){
     }
   });
 
-  // Expose a few functions to window so inline attributes or console can call them
+  // Expose functions to window
   window.openSeries = renderSeriesContent;
   window.playEpisode = playEpisode;
   window.playNext = playNext;
