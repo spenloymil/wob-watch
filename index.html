@@ -21,6 +21,8 @@
     --maxw:1300px;
     --radius:14px;
     --card-radius:22px;
+    --badge-bg:#ffd166;   /* warm gold to stand out */
+    --badge-fg:#033d2a;   /* deep green for contrast */
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -82,6 +84,7 @@
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     cursor:pointer;
     display:flex; flex-direction:column;
+    position:relative;
   }
   /* portrait ratio via padding trick */
   .cardImage{
@@ -96,6 +99,44 @@
   .cardFooter .title{ font-family:'Anton', Impact, sans-serif; font-size:22px; letter-spacing:0.6px; }
   .cardFooter .sub{ font-size:13px; color:rgba(255,255,255,0.9); }
 
+  /* show badge on card image (top-left) */
+  .showBadge{
+    position:absolute;
+    top:12px;
+    left:12px;
+    background:var(--badge-bg);
+    color:var(--badge-fg);
+    font-weight:800;
+    font-size:12px;
+    padding:6px 10px;
+    border-radius:999px;
+    letter-spacing:0.6px;
+    box-shadow:0 8px 22px rgba(0,0,0,0.45);
+    text-transform:uppercase;
+    z-index:6;
+    white-space:nowrap;
+  }
+
+  /* hero cover should allow absolute overlays */
+  .heroCover{ position:relative; }
+
+  /* hero badge (smaller) */
+  .heroBadge{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:var(--badge-bg);
+    color:var(--badge-fg);
+    font-weight:800;
+    font-size:11px;
+    padding:6px 8px;
+    border-radius:999px;
+    box-shadow:0 8px 18px rgba(0,0,0,0.36);
+    text-transform:uppercase;
+    z-index:6;
+    white-space:nowrap;
+  }
+
   /* right: hero & player (kept) */
   .hero {
     border-radius:14px; overflow:hidden; position:relative; margin-bottom:18px; min-height:220px;
@@ -104,6 +145,7 @@
   }
   .heroLeft{ width:280px; min-width:180px }
   .heroCover{ width:100%; height:160px; border-radius:10px; background:#07261a; overflow:hidden; display:flex; align-items:center; justify-content:center; color:var(--muted); font-weight:900 }
+  .heroCover img{ width:100%; height:100%; object-fit:cover; display:block }
   .heroBody{ flex:1; color:inherit }
   .heroTitle{ font-weight:900; font-size:20px; color:#eaffef }
   .heroDesc{ color:var(--muted); margin-top:6px; max-width:700px }
@@ -224,12 +266,7 @@
 
 <script>
 /* ==========================
-   Home-grid + mobile support
-   - Cards (portrait) on home screen (use `cover`)
-   - Hero view uses `coverB` if present, otherwise falls back to `cover`
-   - Removed left-column small series list entirely
-   - Removed starred (fav) buttons and watched tag
-   - Playback (Cloudflare/HLS/YouTube/direct) preserved
+   Home-grid + mobile support + badge for specific show
 */
 
 /* -------------------------
@@ -242,6 +279,7 @@ const CONTENT = [
     desc: "Stream the original series on WOB WATCH+",
     cover: 'BDRCOVER.png',        // used on the home card (portrait)
     coverB: 'BDRCOVER_B.png',    // used in the hero (landscape/short)
+    badge: 'New Episodes Weekly', // <-- badge text (will be uppercased visually)
     seasons: [
       { id:'s1', title:'Season 1', episodes:[
           { id:'s1e1', title:'', desc:'', thumbnail:'BDRS1E1COVER.png', videoUrl:'https://iframe.videodelivery.net/6d292286ad9b7d8c02b2bd2c7361f376' },
@@ -277,7 +315,6 @@ function save(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
 const qs = id => document.getElementById(id);
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-/* load logo.png into header and welcome; fallback to letter */
 function loadLogo(){
   const headerImg = qs('logoImg'), headerLetter = qs('logoLetter');
   const welcomeImg = qs('welcomeLogo'), welcomeLetter = qs('welcomeLetter');
@@ -336,6 +373,15 @@ function renderHomeGrid(){
       imgWrap.appendChild(ph);
     }
 
+    // badge on the card (if set)
+    if(s.badge){
+      const b = document.createElement('div');
+      b.className = 'showBadge';
+      b.textContent = s.badge;
+      b.setAttribute('aria-hidden','true');
+      imgWrap.appendChild(b);
+    }
+
     // footer band (green)
     const footer = document.createElement('div'); footer.className='cardFooter';
     const t = document.createElement('div'); t.className='title'; t.textContent = s.name || 'Untitled';
@@ -371,7 +417,26 @@ function showSeriesFromCard(seriesId){
 function renderSeriesContent(seriesId){
   const s = CONTENT.find(x=>x.id===seriesId); if(!s) return;
   const heroImg = s.coverB || s.cover || '';
-  qs('heroCover').innerHTML = heroImg ? `<img src="${escapeHtml(heroImg)}" style="width:100%;height:100%;object-fit:cover" />` : escapeHtml(s.name.slice(0,2).toUpperCase());
+  // set hero image (or fallback text)
+  if(heroImg){
+    qs('heroCover').innerHTML = `<img src="${escapeHtml(heroImg)}" alt="${escapeHtml(s.name)} cover" />`;
+    // ensure image hide on error handled by browser; we append badge below
+  } else {
+    qs('heroCover').innerHTML = escapeHtml(s.name.slice(0,2).toUpperCase());
+  }
+
+  // hero badge (if set)
+  // remove any existing heroBadge to avoid duplicates
+  const existing = qs('heroCover').querySelector('.heroBadge');
+  if(existing) existing.remove();
+  if(s.badge){
+    const hb = document.createElement('div');
+    hb.className = 'heroBadge';
+    hb.textContent = s.badge;
+    hb.setAttribute('aria-hidden','true');
+    qs('heroCover').appendChild(hb);
+  }
+
   qs('heroTitle').textContent = s.name;
   qs('heroDesc').textContent = s.desc || '';
   const tabs = qs('seasonTabs'); if(!tabs) return; tabs.innerHTML='';
