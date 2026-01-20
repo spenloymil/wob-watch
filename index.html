@@ -257,9 +257,36 @@
   @media (max-width:420px){
     .cardFooter .title{ font-size:20px }
   }
+
+  /* simple auth modal tweaks */
+  #authGate { display:flex; align-items:center; justify-content:center; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:99999; }
+  #authBox { width:360px; background:#021f16; padding:20px; border-radius:12px; color:#e8f8ef; box-shadow:0 20px 60px rgba(0,0,0,0.6); }
+  #authBox input { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:0; background:#09261a; color:inherit }
+  #authBox button { padding:10px 12px; border-radius:8px; border:0; cursor:pointer; font-weight:700 }
+  #authButtons { display:flex; gap:8px; margin-top:8px }
+  #authMsg { color:#ffd166; margin-top:8px; font-size:13px }
+  #accountInfo { display:flex; gap:8px; align-items:center; color:var(--muted) }
 </style>
 </head>
 <body>
+
+<!-- LOGIN / SIGNUP GATE -->
+<div id="authGate" style="display:none">
+  <div id="authBox" role="dialog" aria-modal="true">
+    <h3 style="margin:6px 0 10px">Sign in to WOB WATCH+</h3>
+    <div id="authMsg" style="min-height:18px"></div>
+    <input id="authEmail" placeholder="Email" type="email" autocomplete="email" />
+    <input id="authName" placeholder="Display name (for signup)" style="display:block" />
+    <input id="authPass" placeholder="Password" type="password" autocomplete="current-password" />
+    <div id="authButtons">
+      <button id="authSignupBtn" style="flex:1;background:var(--accent);color:white">Sign up</button>
+      <button id="authLoginBtn" style="flex:1;background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)">Log in</button>
+    </div>
+    <div style="margin-top:10px;text-align:center">
+      <a href="#" id="toggleAuth" style="color:var(--muted);font-size:13px">Already have an account? Log in</a>
+    </div>
+  </div>
+</div>
 
 <!-- Welcome -->
 <div id="welcome" role="dialog" aria-modal="true">
@@ -283,6 +310,7 @@
     <input id="globalSearchInput" placeholder="Search series, episodes..." style="padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit" />
     <div id="seriesCount" style="color:var(--muted);font-size:13px;margin-right:6px">0 total</div>
     <button class="ghost" id="homeBtn">Home</button>
+    <!-- accountInfo will be appended here after login -->
   </div>
 </div>
 
@@ -967,6 +995,144 @@ function normalizeCloudflareIframe(u){
 
   document.title = 'WOB WATCH+ — Stream';
 })();
+
+/* ---------------------------
+   FRONTEND AUTH (signup/login)
+   ---------------------------
+   Uses your deployed Worker API:
+   https://wob.worldofbloxburg.workers.dev
+   The Worker sets an HttpOnly cookie; we use credentials:'include' so browser sends it.
+*/
+const API = "https://wob.worldofbloxburg.workers.dev";
+
+const authGate = document.getElementById('authGate');
+const authEmail = document.getElementById('authEmail');
+const authPass = document.getElementById('authPass');
+const authName = document.getElementById('authName');
+const authMsg = document.getElementById('authMsg');
+const authSignupBtn = document.getElementById('authSignupBtn');
+const authLoginBtn = document.getElementById('authLoginBtn');
+const toggleAuth = document.getElementById('toggleAuth');
+
+let showingSignup = true;
+function showAuthGate(signup=true, msg=''){
+  showingSignup = signup;
+  authName.style.display = signup ? 'block' : 'none';
+  authSignupBtn.style.display = signup ? 'inline-block' : 'none';
+  authLoginBtn.style.display = signup ? 'none' : 'inline-block';
+  toggleAuth.textContent = signup ? 'Already have an account? Log in' : "Don't have an account? Sign up";
+  authMsg.textContent = msg || '';
+  authGate.style.display = 'flex';
+  authEmail.focus();
+}
+toggleAuth.addEventListener('click', (e)=>{ e.preventDefault(); showAuthGate(!showingSignup); });
+
+authSignupBtn.addEventListener('click', async ()=>{
+  authMsg.textContent = '';
+  const email = (authEmail.value || '').trim();
+  const name = (authName.value || '').trim();
+  const password = authPass.value || '';
+  if(!email || !password){ authMsg.textContent = 'Email and password required'; return; }
+  authMsg.textContent = 'Signing up...';
+  try{
+    const res = await fetch(API + '/signup', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, name, password })
+    });
+    const j = await res.json();
+    if(!res.ok){ authMsg.textContent = j.error || 'Signup failed'; return; }
+    // success
+    authGate.style.display = 'none';
+    initAfterLogin(j.user);
+  }catch(e){
+    authMsg.textContent = 'Network error';
+  }
+});
+
+authLoginBtn.addEventListener('click', async ()=>{
+  authMsg.textContent = '';
+  const email = (authEmail.value || '').trim();
+  const password = authPass.value || '';
+  if(!email || !password){ authMsg.textContent = 'Email and password required'; return; }
+  authMsg.textContent = 'Logging in...';
+  try{
+    const res = await fetch(API + '/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const j = await res.json();
+    if(!res.ok){ authMsg.textContent = j.error || 'Login failed'; return; }
+    authGate.style.display = 'none';
+    initAfterLogin(j.user);
+  }catch(e){
+    authMsg.textContent = 'Network error';
+  }
+});
+
+async function logout(){
+  try{
+    await fetch(API + '/logout', { method: 'POST', credentials: 'include' });
+  }catch(e){}
+  // remove UI account info
+  const acct = document.getElementById('accountInfo');
+  if(acct && acct.parentNode) acct.parentNode.removeChild(acct);
+  showAuthGate(true);
+}
+
+/* Called after successful login/signup */
+function initAfterLogin(user){
+  // hide welcome if present
+  const w = qs('welcome');
+  if(w && w.parentNode) { w.classList.add('hide-welcome'); setTimeout(()=>{ if(w && w.parentNode) w.parentNode.removeChild(w); },400); }
+
+  // update header with account info
+  let acct = document.getElementById('accountInfo');
+  if(!acct){
+    acct = document.createElement('div'); acct.id='accountInfo'; acct.style.marginLeft = '12px'; acct.style.color='var(--muted)'; acct.style.display='flex'; acct.style.alignItems='center'; acct.style.gap='8px';
+    const nameSpan = document.createElement('span');
+    nameSpan.id = 'accountName';
+    nameSpan.textContent = user.name ? user.name : user.email;
+    const logoutBtn = document.createElement('button'); logoutBtn.className='ghost'; logoutBtn.textContent='Logout';
+    logoutBtn.addEventListener('click', logout);
+    acct.appendChild(nameSpan);
+    acct.appendChild(logoutBtn);
+    document.querySelector('.header-actions').appendChild(acct);
+  } else {
+    const nameSpan = document.getElementById('accountName');
+    if(nameSpan) nameSpan.textContent = user.name ? user.name : user.email;
+  }
+
+  // show home and render as normal
+  qs('seriesCount').textContent = visibleSeriesList().length + ' total';
+  showHome();
+}
+
+/* check authentication on page load */
+async function checkMeOnLoad(){
+  // show a minimal loader state: we'll show auth gate while checking
+  showAuthGate(true, 'Checking session...');
+  try{
+    const res = await fetch(API + '/me', { method: 'GET', credentials: 'include' });
+    const j = await res.json();
+    if(j && j.user){
+      authGate.style.display = 'none';
+      initAfterLogin(j.user);
+    } else {
+      showAuthGate(true);
+    }
+  }catch(e){
+    // network issue — show gate with message so user can try
+    showAuthGate(true, 'Unable to contact auth server');
+  }
+}
+
+/* run auth check after everything initializes */
+checkMeOnLoad();
+
 </script>
 </body>
 </html>
